@@ -3,10 +3,24 @@ import { create } from 'zustand';
 import { generateCandidates, generateHitMissTimeline, liveEventTemplates } from '../data/mockData';
 
 // ─── UI Store ────────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('ew-theme', theme);
+}
+
+const savedTheme = localStorage.getItem('ew-theme') ?? 'light';
+applyTheme(savedTheme);
+
 export const useUIStore = create((set) => ({
-  theme: 'dark',
+  theme: savedTheme,
   sidebarOpen: true,
   activeRun: 'run-004',
+  setTheme: (theme) => { applyTheme(theme); set({ theme }); },
+  toggleTheme: () => set((s) => {
+    const next = s.theme === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    return { theme: next };
+  }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setActiveRun: (id) => set({ activeRun: id }),
 }));

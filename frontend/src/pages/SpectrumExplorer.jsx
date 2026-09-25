@@ -26,8 +26,8 @@ export default function SpectrumExplorer() {
       <div className="card mb-4">
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
-            <label>Scenario</label>
-            <select value={scenario} onChange={e => setScenario(e.target.value)}>
+            <label htmlFor="se-scenario">Scenario</label>
+            <select id="se-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
               <option value="sc-001">sc-001 · No Prior Info</option>
               <option value="sc-002">sc-002 · Periodic Activity</option>
               <option value="sc-003">sc-003 · Burst / Short Duration</option>
@@ -35,8 +35,8 @@ export default function SpectrumExplorer() {
             </select>
           </div>
           <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
-            <label>Overlay</label>
-            <select value={overlay} onChange={e => setOverlay(e.target.value)}>
+            <label htmlFor="se-overlay">Overlay</label>
+            <select id="se-overlay" value={overlay} onChange={e => setOverlay(e.target.value)}>
               <option value="all">All Layers</option>
               <option value="gt">Ground Truth Only</option>
               <option value="obs">Observed Only</option>
@@ -44,8 +44,8 @@ export default function SpectrumExplorer() {
             </select>
           </div>
           <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
-            <label>Activity Pattern</label>
-            <select>
+            <label htmlFor="se-pattern">Activity Pattern</label>
+            <select id="se-pattern">
               <option>All Patterns</option>
               <option>Periodic</option>
               <option>Burst</option>
@@ -53,8 +53,8 @@ export default function SpectrumExplorer() {
             </select>
           </div>
           <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
-            <label>Result Filter</label>
-            <select>
+            <label htmlFor="se-result">Result Filter</label>
+            <select id="se-result">
               <option>All Results</option>
               <option>Hits Only</option>
               <option>Misses Only</option>
@@ -67,9 +67,7 @@ export default function SpectrumExplorer() {
       {/* Main spectrogram */}
       <div className="card mb-4">
         <div className="card-header">
-          <div className="card-title">
-            🌊 Time-Frequency Spectrogram
-          </div>
+          <div className="card-title">Time-Frequency Spectrogram</div>
           <div className="flex gap-2">
             <span className="badge badge-gt">Ground Truth</span>
             <span className="badge badge-pred">Observed</span>
@@ -77,7 +75,7 @@ export default function SpectrumExplorer() {
           </div>
         </div>
         <WaterfallChart height={340} />
-        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+        <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-faint)' }}>
           Hover for tooltip · X = Time slot · Y = Band index · Color = Signal power estimate
         </div>
       </div>
@@ -86,19 +84,19 @@ export default function SpectrumExplorer() {
       <div className="grid-2 mb-4">
         <div className="card">
           <div className="card-header">
-            <div className="card-title">🔥 Activity Occupancy Heatmap</div>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Band × Hour of Day</span>
+            <div className="card-title">Activity Occupancy Heatmap</div>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Band × Hour of Day</span>
           </div>
           <OccupancyHeatmap height={260} />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-            Occupancy fraction 0–1. Warm colors = higher activity probability.
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+            Occupancy fraction 0–1. Darker color = higher activity probability.
           </div>
         </div>
 
         <div className="card">
           <div className="card-header">
-            <div className="card-title">📊 Observation Results</div>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Hit / Miss / FA scatter</span>
+            <div className="card-title">Observation Results</div>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Hit / Miss / FA scatter</span>
           </div>
           <HitMissTimeline events={events} height={260} />
         </div>
@@ -107,8 +105,8 @@ export default function SpectrumExplorer() {
       {/* Band detail table */}
       <div className="card">
         <div className="card-header">
-          <div className="card-title">📋 Band Activity Summary</div>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Hover a row for details</span>
+          <div className="card-title">Band Activity Summary</div>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Hover a row for details</span>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
@@ -132,21 +130,21 @@ export default function SpectrumExplorer() {
                 const fas = Math.floor(Math.random() * 5);
                 return (
                   <tr key={b}>
-                    <td style={{ color: 'var(--accent)' }}>B{b}</td>
-                    <td>{(100 + b * 185).toFixed(0)} MHz</td>
+                    <td className="mono text-accent">B{b}</td>
+                    <td className="mono">{(100 + b * 185).toFixed(0)} MHz</td>
                     <td>
                       <div className="flex items-center gap-2">
                         <div className="progress" style={{ width: 60 }}>
                           <div className="progress-fill hit" style={{ width: `${rate * 100}%` }} />
                         </div>
-                        {(rate * 100).toFixed(1)}%
+                        <span className="mono">{(rate * 100).toFixed(1)}%</span>
                       </div>
                     </td>
-                    <td style={{ color: 'var(--hit)' }}>{hits}</td>
-                    <td style={{ color: 'var(--miss)' }}>{misses}</td>
-                    <td style={{ color: 'var(--false-alarm)' }}>{fas}</td>
-                    <td>{(8 + Math.random() * 20).toFixed(1)} dB</td>
-                    <td style={{ color: 'var(--pred)' }}>{(rate + (Math.random() - 0.5) * 0.1).toFixed(3)}</td>
+                    <td className="mono text-hit">{hits}</td>
+                    <td className="mono text-miss">{misses}</td>
+                    <td className="mono text-warn">{fas}</td>
+                    <td className="mono">{(8 + Math.random() * 20).toFixed(1)} dB</td>
+                    <td className="mono text-pred">{(rate + (Math.random() - 0.5) * 0.1).toFixed(3)}</td>
                   </tr>
                 );
               })}
