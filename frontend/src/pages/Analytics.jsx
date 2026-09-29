@@ -1,23 +1,69 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Download, BarChart3 } from 'lucide-react';
 import { BenchmarkBar, SchedulerRadar, CumulativeRewardChart, LatencyDistChart } from '../components/charts';
-import { benchmarkData, generateRewardCurves, generateLatencyData } from '../data/mockData';
+import { benchmarkData as mockBenchmark, generateRewardCurves, generateLatencyData } from '../data/mockData';
+import { modelsApi } from '../services/api';
 
-const METRICS = [
-  { key: 'pd',          label: 'V-Measure ★',          values: benchmarkData.v_measure ?? benchmarkData.pd,          yLabel: 'V-Measure',      fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'obs_rate',    label: 'Homogeneity',           values: benchmarkData.homogeneity ?? benchmarkData.obs_rate,  yLabel: 'Homogeneity',    fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'avg_latency', label: 'Completeness',          values: benchmarkData.completeness ?? benchmarkData.obs_rate, yLabel: 'Completeness',   fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'coverage',    label: 'AMI',                   values: benchmarkData.ami ?? benchmarkData.coverage,          yLabel: 'AMI',            fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'far',         label: 'False Alarm Rate',      values: benchmarkData.far,                                    yLabel: 'FAR',            fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'reward',      label: 'Throughput Score',      values: benchmarkData.reward,                                 yLabel: 'Throughput',     fmt: v => v.toFixed(0) },
+// Static baselines to always include in benchmark
+const STATIC_BASELINES = [
+  { name: 'PRI Histogram + KMeans', v_measure: 0.714, ami: 0.688, homogeneity: 0.731, completeness: 0.698, far: 0.06, reward: 163.7 },
+  { name: 'DBSCAN (CF + AoA)',      v_measure: 0.621, ami: 0.583, homogeneity: 0.647, completeness: 0.598, far: 0.09, reward: 124.3 },
 ];
 
 export default function Analytics() {
   const [activeMetric, setActiveMetric] = useState('pd');
   const [tab, setTab] = useState('benchmark');
+  const [liveModels, setLiveModels] = useState([]);
   const rewardData   = useMemo(() => generateRewardCurves(100), []);
   const latencyFixed = useMemo(() => generateLatencyData(200).map(v => v + 12), []);
   const latencyML    = useMemo(() => generateLatencyData(200), []);
+
+  useEffect(() => {
+    modelsApi.list().then(list => {
+      if (list?.length > 0) setLiveModels(list.filter(m => m.metrics?.v_measure > 0));
+    });
+  }, []);
+
+  // Build benchmark data from live models + static baselines
+  const benchmarkData = useMemo(() => {
+    const all = [
+      ...liveModels.map(m => ({
+        name: m.name,
+        v_measure:    m.metrics.v_measure    ?? 0,
+        ami:          m.metrics.ami           ?? 0,
+        homogeneity:  m.metrics.homogeneity   ?? m.metrics.v_measure ?? 0,
+        completeness: m.metrics.completeness  ?? m.metrics.v_measure ?? 0,
+        far:          m.metrics.pairwise_f1   ? +(1 - m.metrics.pairwise_f1).toFixed(3) : 0.03,
+        reward:       +(m.metrics.v_measure   * 1000).toFixed(1),
+      })),
+      ...STATIC_BASELINES,
+    ].sort((a, b) => b.v_measure - a.v_measure);
+
+    return {
+      schedulers:   all.map(r => r.name),
+      v_measure:    all.map(r => r.v_measure),
+      ami:          all.map(r => r.ami),
+      homogeneity:  all.map(r => r.homogeneity),
+      completeness: all.map(r => r.completeness),
+      far:          all.map(r => r.far),
+      reward:       all.map(r => r.reward),
+      // Legacy field aliases for chart compatibility
+      pd:           all.map(r => r.v_measure),
+      obs_rate:     all.map(r => r.homogeneity),
+      avg_latency:  all.map(r => r.completeness),
+      coverage:     all.map(r => r.ami),
+      ci_pd:        all.map(() => 0.02),
+    };
+  }, [liveModels]);
+
+  const METRICS = [
+    { key: 'pd',          label: 'V-Measure ★',     values: benchmarkData.v_measure,    yLabel: 'V-Measure',    fmt: v => (v*100).toFixed(1)+'%' },
+    { key: 'obs_rate',    label: 'Homogeneity',       values: benchmarkData.homogeneity,  yLabel: 'Homogeneity',  fmt: v => (v*100).toFixed(1)+'%' },
+    { key: 'avg_latency', label: 'Completeness',      values: benchmarkData.completeness, yLabel: 'Completeness', fmt: v => (v*100).toFixed(1)+'%' },
+    { key: 'coverage',    label: 'AMI',               values: benchmarkData.ami,          yLabel: 'AMI',          fmt: v => (v*100).toFixed(1)+'%' },
+    { key: 'far',         label: 'False Alarm Rate',  values: benchmarkData.far,          yLabel: 'FAR',          fmt: v => (v*100).toFixed(1)+'%' },
+    { key: 'reward',      label: 'Throughput Score',  values: benchmarkData.reward,       yLabel: 'Throughput',   fmt: v => v.toFixed(0) },
+  ];
 
   const metric = METRICS.find(m => m.key === activeMetric) ?? METRICS[0];
 

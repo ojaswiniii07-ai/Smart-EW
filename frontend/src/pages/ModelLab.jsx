@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Brain, Play, ExternalLink, Cpu, Database, CheckCircle2 } from 'lucide-react';
+import { Brain, Play, ExternalLink, Cpu, Database, CheckCircle2, AlertCircle } from 'lucide-react';
 import { FeatureImportanceChart, ROCCurve, CalibrationCurve, ConfusionMatrix } from '../components/charts';
 import { mockModels, featureImportance, generateROCData, generateCalibrationData } from '../data/mockData';
 import { modelsApi, deinterleaveApi } from '../services/api';
@@ -13,37 +13,55 @@ const APPROACH_LABELS = {
   deep_learning:    { label: 'Deep Learning', color: 'var(--accent)' },
 };
 
-// Leaderboard from the Turing Deinterleaving Challenge updated with our real trained models
-const LEADERBOARD = [
-  { rank: 1, name: 'RadarTransformerDeinterleaver', v_measure: 0.943, ami: 0.940, notes: 'Self-Attention + Apple MPS (TSRD Scan/Stare)' },
-  { rank: 2, name: 'SeqToSeq-EW (Challenge baseline)', v_measure: 0.921, ami: 0.908, notes: 'Transformer + full PDW' },
-  { rank: 3, name: 'Random Forest Multi-Mode',      v_measure: 0.606, ami: 0.601, notes: '100 Trees (Archive + Scan + Stare)' },
-  { rank: 4, name: 'PRI Histogram + KMeans',        v_measure: 0.714, ami: 0.688, notes: 'ToA / CF / PW features' },
-  { rank: 5, name: 'DBSCAN (CF + AoA)',             v_measure: 0.621, ami: 0.583, notes: 'No training required' },
+// Leaderboard — populated from live API on mount, falls back to static values
+const STATIC_LEADERBOARD = [
+  { rank: 1, name: 'Transformer – Stare Mode',   v_measure: 0.9791, ami: 0.9773, notes: '30 epochs · Apple MPS · tsrd_subset real data' },
+  { rank: 2, name: 'Transformer – Archive Mode', v_measure: 0.9642, ami: 0.9573, notes: '30 epochs · Apple MPS · tsrd_subset real data' },
+  { rank: 3, name: 'Transformer – Scan Mode',    v_measure: 0.9486, ami: 0.9445, notes: '30 epochs · Apple MPS · tsrd_subset real data' },
+  { rank: 4, name: 'SeqToSeq-EW (Challenge baseline)', v_measure: 0.921, ami: 0.908, notes: 'Transformer + full PDW (challenge paper)' },
+  { rank: 5, name: 'PRI Histogram + KMeans',     v_measure: 0.714, ami: 0.688, notes: 'ToA / CF / PW features' },
+  { rank: 6, name: 'DBSCAN (CF + AoA)',          v_measure: 0.621, ami: 0.583, notes: 'No training required' },
 ];
 
 export default function ModelLab() {
   const [modelsList, setModelsList] = useState(mockModels);
-  const [selectedId, setSelectedId] = useState('mdl-rf-real');
+  const [selectedId, setSelectedId] = useState(null);  // null = auto-select first live model
   const [tab, setTab] = useState('overview');
+  const [leaderboard, setLeaderboard] = useState(STATIC_LEADERBOARD);
 
   // Testbench state
   const [tbMode, setTbMode] = useState('scan');
   const [tbSplit, setTbSplit] = useState('test_scan');
-  const [tbModelType, setTbModelType] = useState('random_forest');
+  const [tbModelType, setTbModelType] = useState('transformer');
   const [tbSeqLen, setTbSeqLen] = useState(128);
-  const [tbFileIdx, setTbFileIdx] = useState(1);
+  const [tbFileIdx, setTbFileIdx] = useState(0);
   const [tbLoading, setTbLoading] = useState(false);
   const [tbResult, setTbResult] = useState(null);
+  const [tbError, setTbError]   = useState(null);
 
-  // Load models from live API
+  // Load models from live API and build leaderboard from real scores
   useEffect(() => {
     modelsApi.list().then(list => {
       if (list && list.length > 0) {
         setModelsList(list);
-        if (!list.find(m => m.id === selectedId)) {
-          setSelectedId(list[0].id);
+        // Auto-select first deep learning model if none selected
+        if (!selectedId) {
+          const firstDL = list.find(m => m.approach === 'deep_learning' && m.status === 'active');
+          setSelectedId((firstDL ?? list[0]).id);
         }
+        // Build leaderboard from live model scores
+        const liveRows = list
+          .filter(m => m.metrics?.v_measure > 0)
+          .map(m => ({ name: m.name, v_measure: m.metrics.v_measure, ami: m.metrics.ami ?? 0, notes: m.description?.slice(0, 60) ?? '' }));
+        // Merge with static baselines
+        const merged = [
+          ...liveRows,
+          { name: 'SeqToSeq-EW (Challenge baseline)', v_measure: 0.921, ami: 0.908, notes: 'Challenge paper Transformer' },
+          { name: 'PRI Histogram + KMeans',           v_measure: 0.714, ami: 0.688, notes: 'ToA / CF / PW features' },
+          { name: 'DBSCAN (CF + AoA)',                v_measure: 0.621, ami: 0.583, notes: 'No training required' },
+        ].sort((a, b) => b.v_measure - a.v_measure)
+          .map((row, i) => ({ ...row, rank: i + 1 }));
+        setLeaderboard(merged);
       }
     });
   }, []);
@@ -89,18 +107,23 @@ export default function ModelLab() {
   const handleRunInference = async () => {
     setTbLoading(true);
     setTbResult(null);
+    setTbError(null);
     try {
       const res = await deinterleaveApi.run({
         mode: tbMode,
-        split: tbSplit,
+        // split is auto-derived from mode inside deinterleaveApi.run
         file_index: tbFileIdx,
         window_start: 0,
         seq_len: tbSeqLen,
         model_type: tbModelType,
       });
-      setTbResult(res);
+      if (res) {
+        setTbResult(res);
+      } else {
+        setTbError('Backend returned no data. Ensure the backend is running and tsrd_subset/ has test files.');
+      }
     } catch (e) {
-      console.error(e);
+      setTbError(e.message || 'Inference failed. Check that the backend is running on port 8000.');
     } finally {
       setTbLoading(false);
     }
@@ -164,7 +187,7 @@ export default function ModelLab() {
           {/* Challenge Leaderboard */}
           <div className="card">
             <div className="card-header">
-              <div className="card-title">🏆 Challenge Leaderboard</div>
+              <div className="card-title">🏆 Leaderboard</div>
               <a
                 href="https://github.com/alan-turing-institute/turing-deinterleaving-challenge"
                 target="_blank" rel="noopener noreferrer"
@@ -173,7 +196,7 @@ export default function ModelLab() {
                 <ExternalLink size={11} />
               </a>
             </div>
-            {LEADERBOARD.map(row => (
+            {leaderboard.slice(0, 8).map(row => (
               <div
                 key={row.rank}
                 style={{
@@ -184,20 +207,20 @@ export default function ModelLab() {
               >
                 <span style={{
                   fontSize: 11, fontFamily: 'var(--font-mono)',
-                  color: row.rank === 1 ? '#f59e0b' : 'var(--text-faint)',
-                  fontWeight: row.rank === 1 ? 700 : 400, minWidth: 14,
+                  color: row.rank === 1 ? '#f59e0b' : row.rank <= 3 ? 'var(--accent)' : 'var(--text-faint)',
+                  fontWeight: row.rank <= 3 ? 700 : 400, minWidth: 14,
                 }}>
                   #{row.rank}
                 </span>
                 <div>
-                  <div style={{ fontSize: 12, color: row.rank === 1 ? 'var(--accent)' : 'var(--text-base)', fontWeight: row.rank === 1 ? 600 : 400 }}>
-                    {row.name}
+                  <div style={{ fontSize: 12, color: row.rank <= 3 ? 'var(--accent)' : 'var(--text-base)', fontWeight: row.rank <= 3 ? 600 : 400 }}>
+                    {row.rank <= 3 && <span style={{ marginRight: 4 }}>★</span>}{row.name}
                   </div>
                   <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-sub)' }}>
                     V: <span style={{ color: 'var(--hit)' }}>{row.v_measure.toFixed(3)}</span>
-                    {' '}· AMI: {row.ami.toFixed(3)}
+                    {' '}· AMI: {(row.ami ?? 0).toFixed(3)}
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{row.notes}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{row.notes?.slice(0, 55)}</div>
                 </div>
               </div>
             ))}
@@ -379,10 +402,21 @@ export default function ModelLab() {
                 className="btn btn-primary"
                 onClick={handleRunInference}
                 disabled={tbLoading}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 12 }}
               >
-                <Play size={13} /> {tbLoading ? 'Running Real Inference on M4...' : 'Run Deinterleaving Inference'}
+                <Play size={13} /> {tbLoading ? `Running ${tbModelType === 'transformer' ? 'Transformer' : 'RF'} on ${tbMode.toUpperCase()} data…` : 'Run Deinterleaving Inference'}
               </button>
+
+              {tbError && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12,
+                  padding: '10px 14px', background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.25)', fontSize: 12, color: '#f87171',
+                }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div>{tbError}</div>
+                </div>
+              )}
 
               {tbResult && (
                 <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 14 }}>

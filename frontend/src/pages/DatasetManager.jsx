@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Upload, Eye, Download, ExternalLink, Database, Layers, Radio } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, Eye, Download, ExternalLink, Database, Layers, Radio, RefreshCw } from 'lucide-react';
 import { mockDatasets, PDW_PARAMS, TSRD_STATS } from '../data/mockData';
+import { datasetsApi } from '../services/api';
 
 const STATUS_COLORS = { ready: 'badge-success', preprocessing: 'badge-warn', error: 'badge-error' };
 
@@ -56,9 +57,38 @@ function TSRDStatsTable({ mode, stats }) {
 }
 
 export default function DatasetManager() {
-  const [selected, setSelected] = useState('ds-001');
+  const [datasets, setDatasets]   = useState(mockDatasets);
+  const [rawSplits, setRawSplits] = useState([]);
+  const [selected, setSelected]   = useState(null); // null = auto-select first
   const [statsMode, setStatsMode] = useState('stare');
-  const ds = mockDatasets.find(d => d.id === selected) ?? mockDatasets[0];
+  const [loading, setLoading]     = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      datasetsApi.list(),
+      datasetsApi.rawSplits(),
+    ]).then(([shaped, raw]) => {
+      if (shaped?.length > 0) {
+        setDatasets(shaped);
+        setSelected(shaped[0].id);
+      }
+      if (raw?.length > 0) setRawSplits(raw);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const ds = datasets.find(d => d.id === selected) ?? datasets[0];
+
+  const handleRefresh = () => {
+    setLoading(true);
+    Promise.all([
+      datasetsApi.list(),
+      datasetsApi.rawSplits(),
+    ]).then(([shaped, raw]) => {
+      if (shaped?.length > 0) { setDatasets(shaped); if (!selected) setSelected(shaped[0].id); }
+      if (raw?.length > 0) setRawSplits(raw);
+    }).finally(() => setLoading(false));
+  };
 
   return (
     <div>
@@ -76,7 +106,10 @@ export default function DatasetManager() {
             </a>
           </p>
         </div>
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+          <button className="btn btn-ghost btn-sm" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw size={13} className={loading ? 'spin' : ''} /> {loading ? 'Loading…' : 'Refresh'}
+          </button>
           <button className="btn btn-ghost btn-sm">
             <Download size={13} /> Export Schema
           </button>
@@ -118,7 +151,9 @@ export default function DatasetManager() {
           <div className="card mb-4">
             <div className="card-header">
               <div className="card-title"><Layers size={12} aria-hidden="true" /> Dataset Catalog</div>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{mockDatasets.length} datasets registered</span>
+              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                {loading ? 'Loading…' : `${datasets.length} datasets · local tsrd_subset/`}
+              </span>
             </div>
             <table className="data-table">
               <thead>
@@ -126,14 +161,15 @@ export default function DatasetManager() {
                   <th>Name</th>
                   <th>Rx Mode</th>
                   <th>License</th>
-                  <th>Size</th>
+                  <th>Size (local)</th>
+                  <th>Files</th>
                   <th>Status</th>
                   <th>Quality</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {mockDatasets.map(d => (
+                {datasets.map(d => (
                   <tr
                     key={d.id}
                     onClick={() => setSelected(d.id)}
@@ -152,7 +188,8 @@ export default function DatasetManager() {
                       <span className="badge badge-info">{d.receiver_mode}</span>
                     </td>
                     <td style={{ fontFamily: 'inherit', fontSize: 11 }}>{d.license}</td>
-                    <td>{d.size_mb >= 1000 ? `${(d.size_mb / 1000).toFixed(1)} GB` : `${d.size_mb} MB`}</td>
+                    <td className="mono">{d.size_mb >= 1000 ? `${(d.size_mb / 1000).toFixed(1)} GB` : `${d.size_mb} MB`}</td>
+                    <td className="mono">{d.total_files ?? '—'}</td>
                     <td><span className={`badge ${STATUS_COLORS[d.status]}`}>{d.status}</span></td>
                     <td>
                       <div className="flex items-center gap-2">
@@ -230,6 +267,31 @@ export default function DatasetManager() {
             <TSRDStatsTable mode={statsMode} stats={TSRD_STATS[statsMode]} />
           </div>
         </div>
+
+          {/* Live Split Breakdown from backend */}
+          {rawSplits.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">📂 Local Split Inventory (tsrd_subset/)</div>
+                <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{rawSplits.reduce((a, s) => a + s.file_count, 0)} total files</span>
+              </div>
+              <table className="data-table">
+                <thead>
+                  <tr><th>Mode</th><th>Split</th><th>Files</th><th>Size (MB)</th></tr>
+                </thead>
+                <tbody>
+                  {rawSplits.map(s => (
+                    <tr key={`${s.mode}-${s.split}`}>
+                      <td><span className="badge badge-info">{s.mode}</span></td>
+                      <td className="mono" style={{ color: 'var(--text-sub)' }}>{s.split}</td>
+                      <td className="mono text-accent">{s.file_count}</td>
+                      <td className="mono">{s.size_mb.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
         {/* Dataset Detail Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

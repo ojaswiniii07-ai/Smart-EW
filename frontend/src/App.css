@@ -1,2 +1,6 @@
 /* App.css — scoped styles not covered by index.css design system */
 /* The original Vite scaffold styles are not used in this app shell */
+
+/* Spin animation for loading indicators */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
