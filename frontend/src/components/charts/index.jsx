@@ -320,21 +320,33 @@ export function CalibrationCurve({ data, height = 240 }) {
 }
 
 // ── Confusion Matrix ───────────────────────────────────────────────────────────
-export function ConfusionMatrix({ height = 240 }) {
-  const z = [[412, 38], [91, 459]];
-  const text = z.map(row => row.map(v => `${v}`));
-  const layout = makeLayout({ height, margin: { t: 8, r: 12, b: 50, l: 90 } });
+export function ConfusionMatrix({ height = 260, matrix, labels }) {
+  const defaultZ = [[412, 38], [91, 459]];
+  const defaultLabels = ['No Signal', 'Signal'];
+  
+  const z = matrix && matrix.length > 0 ? matrix : defaultZ;
+  const xLabels = (labels && labels.length === z[0].length ? labels : defaultLabels).map(l => `Pred: ${l}`);
+  const yLabels = (labels && labels.length === z.length ? labels : defaultLabels).map(l => `True: ${l}`);
+
+  const text = z.map(row => row.map(v => typeof v === 'number' ? (v < 1 ? v.toFixed(2) : String(Math.round(v))) : String(v)));
+  const layout = makeLayout({
+    height,
+    margin: { t: 8, r: 12, b: 60, l: 110 },
+    xaxis: { tickangle: -25 },
+    yaxis: { autorange: 'reversed' }
+  });
   return (
     <Plot
       data={[{
         type: 'heatmap', z,
-        x: ['Pred: No Signal', 'Pred: Signal'],
-        y: ['True: No Signal', 'True: Signal'],
+        x: xLabels,
+        y: yLabels,
         colorscale: [[0, cssVar('--bg') || '#f5f3f0'], [0.5, '#e8e4de'], [1, '#2d6a4f']],
-        showscale: false,
+        showscale: true,
+        colorbar: { thickness: 8, outlinewidth: 0 },
         text, texttemplate: '%{text}',
-        textfont: { size: 18, color: cssVar('--text-base') || '#18181b' },
-        hovertemplate: '%{y}<br>%{x}<br>Count: %{z}<extra></extra>',
+        textfont: { size: z.length > 4 ? 10 : 16, color: cssVar('--text-base') || '#18181b' },
+        hovertemplate: '%{y}<br>%{x}<br>Value: %{z:.3f}<extra></extra>',
       }]}
       layout={layout}
       config={CONFIG} style={{ width: '100%' }} useResizeHandler

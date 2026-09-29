@@ -1,0 +1,278 @@
+{
+  "model_id": "mdl-rf-stare",
+  "name": "Random Forest \u2013 Stare Mode",
+  "type": "Ensemble (Random Forest)",
+  "approach": "machine_learning",
+  "status": "active",
+  "mode": "stare",
+  "dataset": "TSRD Stare",
+  "version": "1.0.0",
+  "trained_at": "2026-09-29T09:13:47Z",
+  "description": "Trained exclusively on TSRD stare mode radar pulses. Uses CF, PRI/dToA, PW, AoA, and Amplitude as features.",
+  "metrics": {
+    "v_measure": 0.692,
+    "ami": 0.69,
+    "homogeneity": 0.727,
+    "completeness": 0.661,
+    "accuracy": 0.046,
+    "weighted_f1": 0.035
+  },
+  "features": [
+    "cf",
+    "pri_dtoa",
+    "pw",
+    "aoa",
+    "amplitude"
+  ],
+  "feature_importances": [
+    {
+      "name": "Angle of Arrival (AoA)",
+      "importance": 0.4399,
+      "description": "Spatial line-of-bearing of intercepted radar signal",
+      "percentage": 44.0
+    },
+    {
+      "name": "Centre Frequency (CF)",
+      "importance": 0.2632,
+      "description": "Primary RF discriminator between emitter transmitters",
+      "percentage": 26.3
+    },
+    {
+      "name": "Pulse Width (PW)",
+      "importance": 0.1988,
+      "description": "Radar pulse envelope duration (chirp / operational mode)",
+      "percentage": 19.9
+    },
+    {
+      "name": "Amplitude / Power",
+      "importance": 0.0654,
+      "description": "Received signal power (dBm) and antenna scan modulation",
+      "percentage": 6.5
+    },
+    {
+      "name": "Pulse Repetition Interval (PRI/dToA)",
+      "importance": 0.0328,
+      "description": "Pulse timing intervals and pulse repetition patterns",
+      "percentage": 3.3
+    }
+  ],
+  "roc": {
+    "auc": 0.365,
+    "points": [
+      {
+        "fpr": 0.0,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.011,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.02,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.027,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.036,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.045,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.059,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.07,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.088,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.097,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.131,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.184,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.219,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.252,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.322,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.36,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.379,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.396,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.408,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.448,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.471,
+        "tpr": 0.065
+      },
+      {
+        "fpr": 0.488,
+        "tpr": 0.065
+      },
+      {
+        "fpr": 0.535,
+        "tpr": 0.189
+      },
+      {
+        "fpr": 0.56,
+        "tpr": 0.189
+      },
+      {
+        "fpr": 0.606,
+        "tpr": 0.751
+      },
+      {
+        "fpr": 0.635,
+        "tpr": 0.751
+      },
+      {
+        "fpr": 1.0,
+        "tpr": 1.0
+      }
+    ]
+  },
+  "calibration": {
+    "points": [
+      {
+        "predicted": 0.015,
+        "actual": 0.107
+      },
+      {
+        "predicted": 0.132,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.238,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.33,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.453,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.558,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.63,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.709,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.841,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.979,
+        "actual": 0.0
+      }
+    ]
+  },
+  "confusion_matrix": {
+    "labels": [
+      "Emitter 0",
+      "Emitter 1",
+      "Emitter 2",
+      "Emitter 3",
+      "Emitter 4",
+      "Emitter 5"
+    ],
+    "matrix": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.974,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.026
+      ]
+    ]
+  },
+  "training_samples": 123128,
+  "validation_samples": 19485
+}

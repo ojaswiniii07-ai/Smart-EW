@@ -4,12 +4,12 @@ import { BenchmarkBar, SchedulerRadar, CumulativeRewardChart, LatencyDistChart }
 import { benchmarkData, generateRewardCurves, generateLatencyData } from '../data/mockData';
 
 const METRICS = [
-  { key: 'pd',          label: 'Prob. of Detection',  values: benchmarkData.pd,          yLabel: 'Pd',          fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'far',         label: 'False Alarm Rate',     values: benchmarkData.far,         yLabel: 'FAR',         fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'obs_rate',    label: 'Observation Rate',     values: benchmarkData.obs_rate,    yLabel: 'Obs. Rate',   fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'avg_latency', label: 'Avg Latency (s)',      values: benchmarkData.avg_latency, yLabel: 'Latency (s)', fmt: v => v.toFixed(1)+'s' },
-  { key: 'coverage',    label: 'Coverage',             values: benchmarkData.coverage,    yLabel: 'Coverage',    fmt: v => (v*100).toFixed(1)+'%' },
-  { key: 'reward',      label: 'Cumulative Reward',    values: benchmarkData.reward,      yLabel: 'Reward',      fmt: v => v.toFixed(0) },
+  { key: 'pd',          label: 'V-Measure ★',          values: benchmarkData.v_measure ?? benchmarkData.pd,          yLabel: 'V-Measure',      fmt: v => (v*100).toFixed(1)+'%' },
+  { key: 'obs_rate',    label: 'Homogeneity',           values: benchmarkData.homogeneity ?? benchmarkData.obs_rate,  yLabel: 'Homogeneity',    fmt: v => (v*100).toFixed(1)+'%' },
+  { key: 'avg_latency', label: 'Completeness',          values: benchmarkData.completeness ?? benchmarkData.obs_rate, yLabel: 'Completeness',   fmt: v => (v*100).toFixed(1)+'%' },
+  { key: 'coverage',    label: 'AMI',                   values: benchmarkData.ami ?? benchmarkData.coverage,          yLabel: 'AMI',            fmt: v => (v*100).toFixed(1)+'%' },
+  { key: 'far',         label: 'False Alarm Rate',      values: benchmarkData.far,                                    yLabel: 'FAR',            fmt: v => (v*100).toFixed(1)+'%' },
+  { key: 'reward',      label: 'Throughput Score',      values: benchmarkData.reward,                                 yLabel: 'Throughput',     fmt: v => v.toFixed(0) },
 ];
 
 export default function Analytics() {
@@ -26,7 +26,7 @@ export default function Analytics() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="page-title">Analytics &amp; Benchmarking</h1>
-          <p className="page-subtitle">Side-by-side scheduler comparison · All runs seed 42 · sc-001 · 95% CI shown</p>
+          <p className="page-subtitle">Deinterleaving method comparison · TSRD · All runs seed 42 · V-measure is the primary TSRD challenge metric</p>
         </div>
         <button className="btn btn-secondary btn-sm">
           <Download size={13} aria-hidden="true" /> Export Report

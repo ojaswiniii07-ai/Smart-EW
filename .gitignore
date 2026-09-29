@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Datasets (large files, raw radar HDF5 data)
+tsrd_subset/
+data/
+*.h5
+*.hdf5
+*.mat
+*.npy
+*.npz
+
+# Machine Learning model weights and checkpoints (large binary files >100MB)
+*.joblib
+*.pt
+*.pth
+*.pkl
+checkpoints/
+ml_models/
+ml_model/*.joblib
+ml_model/*.pt
+ml_model/*.pth
+
+# Environment / Secret keys
+.env
+.env.*
+!.env.example
+
+# OS & Editor
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,266 @@
+{
+  "model_id": "mdl-rf-archive",
+  "name": "Random Forest \u2013 Archive Mode",
+  "type": "Ensemble (Random Forest)",
+  "approach": "machine_learning",
+  "status": "active",
+  "mode": "archive",
+  "dataset": "TSRD Archive",
+  "version": "1.0.0",
+  "trained_at": "2026-09-29T09:13:38Z",
+  "description": "Trained exclusively on TSRD archive mode radar pulses. Uses CF, PRI/dToA, PW, AoA, and Amplitude as features.",
+  "metrics": {
+    "v_measure": 0.616,
+    "ami": 0.609,
+    "homogeneity": 0.632,
+    "completeness": 0.602,
+    "accuracy": 0.004,
+    "weighted_f1": 0.004
+  },
+  "features": [
+    "cf",
+    "pri_dtoa",
+    "pw",
+    "aoa",
+    "amplitude"
+  ],
+  "feature_importances": [
+    {
+      "name": "Angle of Arrival (AoA)",
+      "importance": 0.4436,
+      "description": "Spatial line-of-bearing of intercepted radar signal",
+      "percentage": 44.4
+    },
+    {
+      "name": "Centre Frequency (CF)",
+      "importance": 0.2401,
+      "description": "Primary RF discriminator between emitter transmitters",
+      "percentage": 24.0
+    },
+    {
+      "name": "Pulse Width (PW)",
+      "importance": 0.1751,
+      "description": "Radar pulse envelope duration (chirp / operational mode)",
+      "percentage": 17.5
+    },
+    {
+      "name": "Amplitude / Power",
+      "importance": 0.1012,
+      "description": "Received signal power (dBm) and antenna scan modulation",
+      "percentage": 10.1
+    },
+    {
+      "name": "Pulse Repetition Interval (PRI/dToA)",
+      "importance": 0.04,
+      "description": "Pulse timing intervals and pulse repetition patterns",
+      "percentage": 4.0
+    }
+  ],
+  "roc": {
+    "auc": 0.377,
+    "points": [
+      {
+        "fpr": 0.0,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.024,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.044,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.071,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.085,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.105,
+        "tpr": 0.0
+      },
+      {
+        "fpr": 0.119,
+        "tpr": 0.001
+      },
+      {
+        "fpr": 0.135,
+        "tpr": 0.002
+      },
+      {
+        "fpr": 0.145,
+        "tpr": 0.004
+      },
+      {
+        "fpr": 0.156,
+        "tpr": 0.005
+      },
+      {
+        "fpr": 0.165,
+        "tpr": 0.006
+      },
+      {
+        "fpr": 0.177,
+        "tpr": 0.007
+      },
+      {
+        "fpr": 0.188,
+        "tpr": 0.008
+      },
+      {
+        "fpr": 0.199,
+        "tpr": 0.008
+      },
+      {
+        "fpr": 0.213,
+        "tpr": 0.011
+      },
+      {
+        "fpr": 0.225,
+        "tpr": 0.011
+      },
+      {
+        "fpr": 0.242,
+        "tpr": 0.011
+      },
+      {
+        "fpr": 0.256,
+        "tpr": 0.014
+      },
+      {
+        "fpr": 0.28,
+        "tpr": 0.016
+      },
+      {
+        "fpr": 0.293,
+        "tpr": 0.016
+      },
+      {
+        "fpr": 0.312,
+        "tpr": 0.016
+      },
+      {
+        "fpr": 0.323,
+        "tpr": 0.022
+      },
+      {
+        "fpr": 0.334,
+        "tpr": 0.028
+      },
+      {
+        "fpr": 0.348,
+        "tpr": 0.034
+      },
+      {
+        "fpr": 0.365,
+        "tpr": 0.041
+      },
+      {
+        "fpr": 0.386,
+        "tpr": 0.151
+      },
+      {
+        "fpr": 1.0,
+        "tpr": 1.0
+      }
+    ]
+  },
+  "calibration": {
+    "points": [
+      {
+        "predicted": 0.005,
+        "actual": 0.099
+      },
+      {
+        "predicted": 0.151,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.245,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.346,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.426,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.561,
+        "actual": 0.0
+      },
+      {
+        "predicted": 0.619,
+        "actual": 0.0
+      }
+    ]
+  },
+  "confusion_matrix": {
+    "labels": [
+      "Emitter 0",
+      "Emitter 1",
+      "Emitter 2",
+      "Emitter 3",
+      "Emitter 4",
+      "Emitter 5"
+    ],
+    "matrix": [
+      [
+        0.0,
+        0.026,
+        0.0,
+        0.013,
+        0.013,
+        0.948
+      ],
+      [
+        0.0,
+        0.194,
+        0.032,
+        0.0,
+        0.0,
+        0.774
+      ],
+      [
+        0.636,
+        0.114,
+        0.25,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.4,
+        0.0,
+        0.234,
+        0.366,
+        0.0
+      ],
+      [
+        0.0,
+        0.529,
+        0.0,
+        0.0,
+        0.0,
+        0.471
+      ],
+      [
+        0.021,
+        0.979,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "training_samples": 117345,
+  "validation_samples": 29850
+}
