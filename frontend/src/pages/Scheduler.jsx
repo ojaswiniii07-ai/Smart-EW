@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw, Info } from 'lucide-react';
-import { generateCandidates } from '../data/mockData';
+import { generateCandidates } from '../data/radarConstants';
 
 const SCORE_COLORS = {
   'Predicted Prob.':  'var(--accent)',
@@ -91,6 +91,7 @@ export default function SchedulerPage() {
                 background:   strategy === s.id ? 'var(--accent-bg)'     : 'var(--bg-well)',
                 borderColor:  strategy === s.id ? 'var(--accent-border)' : 'var(--border-mid)',
                 color:        strategy === s.id ? 'var(--accent)'        : 'var(--text-sub)',
+                borderRadius: 'var(--r-sm)',
                 flexDirection: 'column', gap: 2, padding: '8px 14px',
               }}
             >
@@ -131,7 +132,8 @@ export default function SchedulerPage() {
                   ? 'var(--accent-bg)'
                   : i % 2 === 0 ? 'var(--bg-inset)' : 'transparent',
                 border: `1px solid ${(selected === i || (selected === null && i === 0)) ? 'var(--accent-border)' : 'transparent'}`,
-                transition: 'background var(--dur) var(--ease)',
+                borderRadius: 'var(--r-sm)',
+                transition: 'background var(--dur) var(--ease), border-color var(--dur) var(--ease)',
               }}
             >
               <span style={{ fontSize: 13, fontWeight: 700, color: c.selected ? 'var(--accent)' : 'var(--text-base)', fontFamily: 'var(--font-mono)' }}>

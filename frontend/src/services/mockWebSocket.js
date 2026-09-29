@@ -1,7 +1,7 @@
 // ─── WebSocket Pulse Stream Service ─────────────────────────────────────────
 // Connects to live FastAPI WebSocket pulse stream on 127.0.0.1:8000,
 // and falls back gracefully to synthetic simulation if the backend is offline.
-import { liveEventTemplates } from '../data/mockData';
+import { liveEventTemplates } from '../data/radarConstants';
 
 export class MockWebSocket {
   constructor(onEvent, intervalMs = 1500) {

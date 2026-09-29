@@ -58,3 +58,11 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# AI Agent & Design Artifacts
+.agents/
+.claude/
+.codex/
+DESIGN.md
+PRODUCT.md
+skills-lock.json

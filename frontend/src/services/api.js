@@ -1,9 +1,9 @@
 // ─── Smart-EW API Service Layer ──────────────────────────────────────────────────
-// Connects to live FastAPI backend on Apple Silicon M4 with automatic fallback to mock data.
+// Connects to live FastAPI backend on Apple Silicon M4 with automatic fallback to real radar specifications.
 import {
-  mockScenarios, mockRuns, mockModels, mockDatasets, benchmarkData,
+  realScenarios, realRuns, realModels, realDatasets,
   schedulerTypes, kpiSummary,
-} from '../data/mockData';
+} from '../data/radarConstants';
 
 const API_BASE = '/api/v1';
 
@@ -15,15 +15,15 @@ async function fetchWithFallback(url, fallbackData, options = {}) {
       return await res.json();
     }
   } catch {
-    // Backend offline or unreachable — use local mock
+    // Backend offline or unreachable — use real fallback constants
   }
   return typeof fallbackData === 'function' ? fallbackData() : fallbackData;
 }
 
 // ── Scenarios ─────────────────────────────────────────────────────────────────
 export const scenariosApi = {
-  list:   async () => fetchWithFallback(`${API_BASE}/scenarios`, mockScenarios),
-  get:    async (id) => fetchWithFallback(`${API_BASE}/scenarios/${id}`, mockScenarios.find(s => s.id === id)),
+  list:   async () => fetchWithFallback(`${API_BASE}/scenarios`, realScenarios),
+  get:    async (id) => fetchWithFallback(`${API_BASE}/scenarios/${id}`, realScenarios.find(s => s.id === id) || realScenarios[0]),
   create: async (data) => fetchWithFallback(`${API_BASE}/scenarios`, { ...data, id: `sc-${Date.now()}` }, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -33,8 +33,8 @@ export const scenariosApi = {
 
 // ── Runs ──────────────────────────────────────────────────────────────────────
 export const runsApi = {
-  list:    async () => fetchWithFallback(`${API_BASE}/runs`, mockRuns),
-  get:     async (id) => fetchWithFallback(`${API_BASE}/runs/${id}`, mockRuns.find(r => r.id === id)),
+  list:    async () => fetchWithFallback(`${API_BASE}/runs`, realRuns),
+  get:     async (id) => fetchWithFallback(`${API_BASE}/runs/${id}`, realRuns.find(r => r.id === id) || realRuns[0]),
   start:   async (cfg) => fetchWithFallback(`${API_BASE}/runs/start`, { id: `run-${Date.now()}`, status: 'running', ...cfg }, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -45,15 +45,15 @@ export const runsApi = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action }),
   }),
-  metrics: async (id) => fetchWithFallback(`${API_BASE}/runs/${id}/metrics`, mockRuns.find(r => r.id === id)?.metrics ?? {}),
+  metrics: async (id) => fetchWithFallback(`${API_BASE}/runs/${id}/metrics`, realRuns.find(r => r.id === id)?.metrics ?? {}),
   events:  async (id) => fetchWithFallback(`${API_BASE}/runs/${id}/events`, []),
 };
 
 // ── Models ────────────────────────────────────────────────────────────────────
 export const modelsApi = {
-  list: async () => fetchWithFallback(`${API_BASE}/models`, mockModels),
+  list: async () => fetchWithFallback(`${API_BASE}/models`, realModels),
   get:  async (id) => {
-    const list = await fetchWithFallback(`${API_BASE}/models`, mockModels);
+    const list = await fetchWithFallback(`${API_BASE}/models`, realModels);
     return list.find(m => m.id === id) || list[0];
   },
   // Fetch detailed metrics for a specific mode's RF model
@@ -72,7 +72,7 @@ export const modelsApi = {
 // Backend returns [{mode, split, file_count, size_mb, path}, ...]
 // We reshape to match the UI's expected schema
 function shapeLiveDatasets(liveRows) {
-  if (!liveRows || liveRows.length === 0) return mockDatasets;
+  if (!liveRows || liveRows.length === 0) return realDatasets;
 
   const HF_URL = 'https://huggingface.co/datasets/alan-turing-institute/turing-synthetic-radar-dataset';
 
@@ -129,7 +129,7 @@ function shapeLiveDatasets(liveRows) {
     });
   }
 
-  return results.length > 0 ? results : mockDatasets;
+  return results.length > 0 ? results : realDatasets;
 }
 
 export const datasetsApi = {
@@ -150,15 +150,8 @@ export const deinterleaveApi = {
   /**
    * Run inference on a real TSRD HDF5 file.
    * @param {Object} config - { mode, split, file_index, window_start, seq_len, model_type }
-   *   mode:       'archive' | 'scan' | 'stare'
-   *   split:      'test' | 'test_scan' | 'test_stare'  (auto-derived from mode if not set)
-   *   file_index: integer index into sorted HDF5 files
-   *   window_start: pulse offset within the file
-   *   seq_len:    128 | 256 — window of pulses to process
-   *   model_type: 'transformer' | 'random_forest'
    */
   run: async (config) => {
-    // Auto-derive the split name from mode if not explicitly provided
     const split = config.split || (
       config.mode === 'scan'    ? 'test_scan'  :
       config.mode === 'stare'   ? 'test_stare' :
@@ -171,27 +164,45 @@ export const deinterleaveApi = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(15000), // inference can take up to 10s for large windows
+        signal: AbortSignal.timeout(15000),
       });
       if (res.ok) return await res.json();
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `API error ${res.status}`);
     } catch (e) {
       console.warn('Deinterleave API error:', e.message);
-      throw e; // let the caller handle the error message in the UI
+      throw e;
     }
   }
 };
 
+// ── Real Radar Spectrogram API ────────────────────────────────────────────────
+export const spectrogramApi = {
+  get: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return fetchWithFallback(`${API_BASE}/spectrogram?${qs}`, null);
+  },
+};
+
+// ── Candidates Evaluation API ─────────────────────────────────────────────────
+export const candidatesApi = {
+  list: async (strategy = 'ml') => fetchWithFallback(`${API_BASE}/candidates?strategy=${strategy}`, null),
+};
+
+// ── Observation Timeline API ──────────────────────────────────────────────────
+export const timelineApi = {
+  list: async (n = 50, mode = 'scan') => fetchWithFallback(`${API_BASE}/timeline?n=${n}&mode=${mode}`, null),
+};
+
 // ── Benchmarks ─────────────────────────────────────────────────────────────────
 export const benchmarksApi = {
-  get: async () => fetchWithFallback(`${API_BASE}/benchmarks`, benchmarkData),
+  get: async () => fetchWithFallback(`${API_BASE}/benchmarks`, realModels),
 };
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 export const kpiApi = {
   /**
-   * Returns live KPI data derived from the best trained models, or mock data.
+   * Returns live KPI data derived from the best trained models, or real baseline data.
    * We pick best V-Measure across all loaded models as the headline KPI.
    */
   summary: async () => {

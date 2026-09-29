@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Download, RotateCcw, Activity } from 'lucide-react';
-import { mockRuns, mockScenarios, mockModels, schedulerTypes, generateHitMissTimeline, generateLatencyData, generateRewardCurves } from '../data/mockData';
+import { realRuns, realScenarios, realModels, schedulerTypes, generateHitMissTimeline, generateLatencyData, generateRewardCurves } from '../data/radarConstants';
 import { HitMissTimeline, LatencyDistChart, CumulativeRewardChart } from '../components/charts';
 
 export default function RunDetail() {
   const [runId, setRunId] = useState('run-004');
-  const run = mockRuns.find(r => r.id === runId) ?? mockRuns[3];
-  const scenario = mockScenarios.find(s => s.id === run.scenario_id);
-  const model = mockModels.find(m => m.id === run.model_id);
+  const run = realRuns.find(r => r.id === runId) ?? realRuns[0];
+  const scenario = realScenarios.find(s => s.id === run.scenario_id);
+  const model = realModels.find(m => m.id === run.model_id);
   const scheduler = schedulerTypes.find(s => s.id === run.scheduler_id);
   const events = useMemo(() => generateHitMissTimeline(60), [runId]);
   const latency = useMemo(() => generateLatencyData(200), [runId]);
@@ -26,7 +26,7 @@ export default function RunDetail() {
         </div>
         <div className="flex gap-2">
           <select value={runId} onChange={e => setRunId(e.target.value)} style={{ width: 160 }}>
-            {mockRuns.map(r => <option key={r.id} value={r.id}>{r.id}</option>)}
+            {realRuns.map(r => <option key={r.id} value={r.id}>{r.id}</option>)}
           </select>
           <button className="btn btn-secondary btn-sm"><RotateCcw size={13} /> Replay</button>
           <button className="btn btn-secondary btn-sm"><Download size={13} /> Export</button>
@@ -55,25 +55,25 @@ export default function RunDetail() {
             ['Ended',       run.ended_at   ? new Date(run.ended_at).toLocaleString()   : '—'],
           ].map(([k, v]) => (
             <div key={k}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{k}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace', wordBreak: 'break-all' }}>{String(v)}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 2 }}>{k}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-base)', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>{String(v)}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Metrics */}
-      {run.metrics.pd != null && (
+      {run.metrics.v_measure != null && (
         <div className="section">
           <div className="section-title mb-3"><Activity size={13} /> Performance Metrics</div>
           <div className="kpi-grid">
             {[
-              { label: 'Prob. Detection',    val: (run.metrics.pd * 100).toFixed(1) + '%',   color: 'var(--hit)' },
-              { label: 'False Alarm Rate',   val: (run.metrics.far * 100).toFixed(1) + '%',  color: 'var(--false-alarm)' },
-              { label: 'Observation Rate',   val: (run.metrics.obs_rate * 100).toFixed(1) + '%', color: 'var(--accent)' },
-              { label: 'Avg Latency',        val: run.metrics.avg_latency.toFixed(1) + ' s', color: 'var(--pred)' },
-              { label: 'Coverage',           val: (run.metrics.coverage * 100).toFixed(1) + '%', color: 'var(--gt)' },
-              { label: 'Cumulative Reward',  val: run.metrics.reward.toFixed(0),              color: 'var(--accent)' },
+              { label: 'V-Measure',      val: (run.metrics.v_measure * 100).toFixed(1) + '%',    color: 'var(--hit)' },
+              { label: 'AMI',            val: (run.metrics.ami * 100).toFixed(1) + '%',           color: 'var(--accent)' },
+              { label: 'Homogeneity',    val: (run.metrics.homogeneity * 100).toFixed(1) + '%',   color: 'var(--pred)' },
+              { label: 'Completeness',   val: (run.metrics.completeness * 100).toFixed(1) + '%',  color: 'var(--gt)' },
+              { label: 'Pairwise F1',    val: run.metrics.pairwise_f1 != null ? (run.metrics.pairwise_f1 * 100).toFixed(1) + '%' : '—', color: 'var(--hit)' },
+              { label: 'Reward Score',   val: run.metrics.reward?.toFixed(0) ?? '—',             color: 'var(--accent)' },
             ].map(({ label, val, color }) => (
               <div key={label} className="kpi-card">
                 <div className="kpi-label">{label}</div>
@@ -92,7 +92,7 @@ export default function RunDetail() {
             <div className="flex gap-2">
               <span style={{ fontSize: 11, color: 'var(--hit)' }}>● {hits} hits</span>
               <span style={{ fontSize: 11, color: 'var(--miss)' }}>✕ {misses} misses</span>
-              <span style={{ fontSize: 11, color: 'var(--false-alarm)' }}>▲ {fas} FA</span>
+              <span style={{ fontSize: 11, color: 'var(--warn)' }}>▲ {fas} FA</span>
             </div>
           </div>
           <HitMissTimeline events={events} height={200} />
@@ -100,7 +100,7 @@ export default function RunDetail() {
         <div className="card">
           <div className="card-header">
             <div className="card-title">⏱ Latency Distribution</div>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Observation latency (s)</span>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Observation latency (s)</span>
           </div>
           <LatencyDistChart data={latency} height={200} />
         </div>
@@ -117,7 +117,7 @@ export default function RunDetail() {
       <div className="card">
         <div className="card-header">
           <div className="card-title">📜 Event Log</div>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Last {events.length} events</span>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Last {events.length} events</span>
         </div>
         <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
           <table className="data-table">

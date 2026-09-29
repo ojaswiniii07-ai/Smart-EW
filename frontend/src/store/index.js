@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react';
 import { create } from 'zustand';
-import { generateCandidates, generateHitMissTimeline, liveEventTemplates } from '../data/mockData';
+import { generateCandidates, generateHitMissTimeline, liveEventTemplates } from '../data/radarConstants';
 
 // ─── UI Store ────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
@@ -8,7 +8,8 @@ function applyTheme(theme) {
   localStorage.setItem('ew-theme', theme);
 }
 
-const savedTheme = localStorage.getItem('ew-theme') ?? 'light';
+// Dark-first: a mission console is read in a dim room, not a bright office.
+const savedTheme = localStorage.getItem('ew-theme') ?? 'dark';
 applyTheme(savedTheme);
 
 export const useUIStore = create((set) => ({

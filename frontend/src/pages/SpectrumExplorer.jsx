@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Download, Filter, ZoomIn } from 'lucide-react';
 import { WaterfallChart, OccupancyHeatmap, HitMissTimeline } from '../components/charts';
-import { generateHitMissTimeline } from '../data/mockData';
+import { generateHitMissTimeline } from '../data/radarConstants';
 
 export default function SpectrumExplorer() {
   const [scenario, setScenario] = useState('sc-001');

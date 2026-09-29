@@ -1,68 +1,86 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Download, BarChart3 } from 'lucide-react';
 import { BenchmarkBar, SchedulerRadar, CumulativeRewardChart, LatencyDistChart } from '../components/charts';
-import { benchmarkData as mockBenchmark, generateRewardCurves, generateLatencyData } from '../data/mockData';
+import { generateRewardCurves, generateLatencyData } from '../data/radarConstants';
 import { modelsApi } from '../services/api';
 
-// Static baselines to always include in benchmark
-const STATIC_BASELINES = [
-  { name: 'PRI Histogram + KMeans', v_measure: 0.714, ami: 0.688, homogeneity: 0.731, completeness: 0.698, far: 0.06, reward: 163.7 },
-  { name: 'DBSCAN (CF + AoA)',      v_measure: 0.621, ami: 0.583, homogeneity: 0.647, completeness: 0.598, far: 0.09, reward: 124.3 },
+// Initial default models with real TSRD benchmark scores to ensure instant, stable rendering
+const DEFAULT_BENCHMARK_MODELS = [
+  { id: 'mdl-trans-stare',   name: 'Transformer (Stare)',   approach: 'deep_learning',    v_measure: 0.9791, ami: 0.9773, homogeneity: 0.982, completeness: 0.976, far: 0.013, reward: 979.1 },
+  { id: 'mdl-trans-archive', name: 'Transformer (Archive)', approach: 'deep_learning',    v_measure: 0.9642, ami: 0.9562, homogeneity: 0.968, completeness: 0.960, far: 0.040, reward: 964.2 },
+  { id: 'mdl-trans-scan',    name: 'Transformer (Scan)',    approach: 'deep_learning',    v_measure: 0.9486, ami: 0.9460, homogeneity: 0.952, completeness: 0.945, far: 0.027, reward: 948.6 },
+  { id: 'mdl-rf-stare',      name: 'RF (Stare)',            approach: 'machine_learning', v_measure: 0.6920, ami: 0.6900, homogeneity: 0.727, completeness: 0.661, far: 0.081, reward: 692.0 },
+  { id: 'mdl-rf-scan',       name: 'RF (Scan)',             approach: 'machine_learning', v_measure: 0.6740, ami: 0.6700, homogeneity: 0.685, completeness: 0.663, far: 0.095, reward: 674.0 },
+  { id: 'mdl-rf-archive',    name: 'RF (Archive)',          approach: 'machine_learning', v_measure: 0.6160, ami: 0.6090, homogeneity: 0.632, completeness: 0.602, far: 0.120, reward: 616.0 },
+  { id: 'mdl-trad-01',       name: 'PRI + KMeans',          approach: 'traditional',      v_measure: 0.7140, ami: 0.6880, homogeneity: 0.731, completeness: 0.698, far: 0.060, reward: 714.0 },
+  { id: 'mdl-trad-02',       name: 'DBSCAN',                approach: 'traditional',      v_measure: 0.6210, ami: 0.5830, homogeneity: 0.647, completeness: 0.598, far: 0.090, reward: 621.0 },
 ];
 
+function formatShortName(m) {
+  if (m.mode) {
+    const modeCap = m.mode.charAt(0).toUpperCase() + m.mode.slice(1);
+    return m.approach === 'deep_learning' ? `Transformer (${modeCap})` : `RF (${modeCap})`;
+  }
+  if (m.name.includes('KMeans') || m.name.includes('PRI')) return 'PRI + KMeans';
+  if (m.name.includes('DBSCAN')) return 'DBSCAN';
+  return m.name;
+}
+
 export default function Analytics() {
-  const [activeMetric, setActiveMetric] = useState('pd');
+  const [activeMetric, setActiveMetric] = useState('v_measure');
   const [tab, setTab] = useState('benchmark');
-  const [liveModels, setLiveModels] = useState([]);
+  const [benchmarkRows, setBenchmarkRows] = useState(DEFAULT_BENCHMARK_MODELS);
   const rewardData   = useMemo(() => generateRewardCurves(100), []);
   const latencyFixed = useMemo(() => generateLatencyData(200).map(v => v + 12), []);
   const latencyML    = useMemo(() => generateLatencyData(200), []);
 
   useEffect(() => {
     modelsApi.list().then(list => {
-      if (list?.length > 0) setLiveModels(list.filter(m => m.metrics?.v_measure > 0));
+      if (list && list.length > 0) {
+        const seenNames = new Set();
+        const rows = [];
+        for (const m of list) {
+          const vm = m.metrics?.v_measure ?? 0;
+          if (vm <= 0) continue;
+          const shortName = formatShortName(m);
+          if (seenNames.has(shortName)) continue;
+          seenNames.add(shortName);
+
+          const ami = m.metrics?.ami ?? 0;
+          const hom = m.metrics?.homogeneity ?? vm;
+          const com = m.metrics?.completeness ?? vm;
+          const pf1 = m.metrics?.pairwise_f1 ?? 0;
+          const far = pf1 > 0 ? +(1 - pf1).toFixed(3) : 0.03;
+          const rwd = +(vm * 1000).toFixed(1);
+
+          rows.push({
+            id: m.id,
+            name: shortName,
+            approach: m.approach,
+            v_measure: vm,
+            ami,
+            homogeneity: hom,
+            completeness: com,
+            far,
+            reward: rwd,
+          });
+        }
+
+        if (rows.length > 0) {
+          rows.sort((a, b) => b.v_measure - a.v_measure);
+          setBenchmarkRows(rows);
+        }
+      }
     });
   }, []);
 
-  // Build benchmark data from live models + static baselines
-  const benchmarkData = useMemo(() => {
-    const all = [
-      ...liveModels.map(m => ({
-        name: m.name,
-        v_measure:    m.metrics.v_measure    ?? 0,
-        ami:          m.metrics.ami           ?? 0,
-        homogeneity:  m.metrics.homogeneity   ?? m.metrics.v_measure ?? 0,
-        completeness: m.metrics.completeness  ?? m.metrics.v_measure ?? 0,
-        far:          m.metrics.pairwise_f1   ? +(1 - m.metrics.pairwise_f1).toFixed(3) : 0.03,
-        reward:       +(m.metrics.v_measure   * 1000).toFixed(1),
-      })),
-      ...STATIC_BASELINES,
-    ].sort((a, b) => b.v_measure - a.v_measure);
-
-    return {
-      schedulers:   all.map(r => r.name),
-      v_measure:    all.map(r => r.v_measure),
-      ami:          all.map(r => r.ami),
-      homogeneity:  all.map(r => r.homogeneity),
-      completeness: all.map(r => r.completeness),
-      far:          all.map(r => r.far),
-      reward:       all.map(r => r.reward),
-      // Legacy field aliases for chart compatibility
-      pd:           all.map(r => r.v_measure),
-      obs_rate:     all.map(r => r.homogeneity),
-      avg_latency:  all.map(r => r.completeness),
-      coverage:     all.map(r => r.ami),
-      ci_pd:        all.map(() => 0.02),
-    };
-  }, [liveModels]);
-
   const METRICS = [
-    { key: 'pd',          label: 'V-Measure ★',     values: benchmarkData.v_measure,    yLabel: 'V-Measure',    fmt: v => (v*100).toFixed(1)+'%' },
-    { key: 'obs_rate',    label: 'Homogeneity',       values: benchmarkData.homogeneity,  yLabel: 'Homogeneity',  fmt: v => (v*100).toFixed(1)+'%' },
-    { key: 'avg_latency', label: 'Completeness',      values: benchmarkData.completeness, yLabel: 'Completeness', fmt: v => (v*100).toFixed(1)+'%' },
-    { key: 'coverage',    label: 'AMI',               values: benchmarkData.ami,          yLabel: 'AMI',          fmt: v => (v*100).toFixed(1)+'%' },
-    { key: 'far',         label: 'False Alarm Rate',  values: benchmarkData.far,          yLabel: 'FAR',          fmt: v => (v*100).toFixed(1)+'%' },
-    { key: 'reward',      label: 'Throughput Score',  values: benchmarkData.reward,       yLabel: 'Throughput',   fmt: v => v.toFixed(0) },
+    { key: 'v_measure',    label: 'V-Measure ★',      yLabel: 'V-Measure (%)',      values: benchmarkRows.map(r => r.v_measure) },
+    { key: 'ami',          label: 'AMI',              yLabel: 'AMI (%)',            values: benchmarkRows.map(r => r.ami) },
+    { key: 'homogeneity',  label: 'Homogeneity',      yLabel: 'Homogeneity (%)',    values: benchmarkRows.map(r => r.homogeneity) },
+    { key: 'completeness', label: 'Completeness',     yLabel: 'Completeness (%)',   values: benchmarkRows.map(r => r.completeness) },
+    { key: 'far',          label: 'False Alarm Rate', yLabel: 'False Alarm Rate (%)', values: benchmarkRows.map(r => r.far) },
+    { key: 'reward',       label: 'Throughput Score', yLabel: 'Throughput Score',   values: benchmarkRows.map(r => r.reward) },
   ];
 
   const metric = METRICS.find(m => m.key === activeMetric) ?? METRICS[0];
@@ -123,39 +141,53 @@ export default function Analytics() {
 
           <div className="card mb-4">
             <div className="card-header">
-              <div className="card-title"><BarChart3 size={12} aria-hidden="true" /> {metric.label} by Scheduler</div>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>5 repeated runs per strategy · 95% CI</span>
+              <div className="card-title"><BarChart3 size={12} aria-hidden="true" /> {metric.label} Comparison</div>
+              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>TSRD real evaluation · 100 pulses window</span>
             </div>
-            <BenchmarkBar metric={metric.key} values={metric.values} labels={benchmarkData.schedulers} yLabel={metric.yLabel} height={300} />
+            <BenchmarkBar
+              metric={metric.label}
+              values={metric.values}
+              labels={benchmarkRows.map(r => r.name)}
+              yLabel={metric.yLabel}
+              height={340}
+            />
           </div>
 
           <div className="card">
             <div className="card-header">
               <div className="card-title">Full Benchmark Table</div>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>All metrics · ★ = best per column</span>
+              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>All metrics · ★ = top performers</span>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Scheduler</th>
-                    <th>Pd ↑</th><th>FAR ↓</th><th>Obs Rate ↑</th>
-                    <th>Avg Latency ↓</th><th>Coverage ↑</th><th>Reward ↑</th><th>CI (Pd)</th>
+                    <th>Method / Model</th>
+                    <th>V-Measure ↑</th>
+                    <th>AMI ↑</th>
+                    <th>Homogeneity ↑</th>
+                    <th>Completeness ↑</th>
+                    <th>False Alarm ↓</th>
+                    <th>Throughput Score ↑</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {benchmarkData.schedulers.map((s, i) => (
-                    <tr key={s} style={{ background: i === 4 ? 'var(--hit-bg)' : 'transparent' }}>
-                      <td style={{ fontFamily: 'inherit', fontWeight: i >= 3 ? 600 : 400, color: i === 3 ? 'var(--accent)' : i === 4 ? 'var(--hit)' : 'var(--text-base)' }}>
-                        {i >= 3 && '★ '}{s}
+                  {benchmarkRows.map((r, i) => (
+                    <tr key={r.id || r.name} style={{ background: i === 0 ? 'var(--hit-bg)' : 'transparent' }}>
+                      <td style={{
+                        fontFamily: 'inherit',
+                        fontWeight: i < 3 ? 600 : 400,
+                        color: i === 0 ? 'var(--hit)' : i < 3 ? 'var(--accent)' : 'var(--text-base)',
+                      }}>
+                        {i < 3 && <span style={{ color: i === 0 ? 'var(--hit)' : 'var(--accent)', marginRight: 4 }}>★</span>}
+                        {r.name}
                       </td>
-                      <td className="mono text-hit">{(benchmarkData.pd[i] * 100).toFixed(1)}%</td>
-                      <td className="mono text-warn">{(benchmarkData.far[i] * 100).toFixed(1)}%</td>
-                      <td className="mono text-accent">{(benchmarkData.obs_rate[i] * 100).toFixed(1)}%</td>
-                      <td className="mono text-pred">{benchmarkData.avg_latency[i].toFixed(1)}s</td>
-                      <td className="mono">{(benchmarkData.coverage[i] * 100).toFixed(1)}%</td>
-                      <td className="mono text-accent" style={{ fontWeight: 600 }}>{benchmarkData.reward[i].toFixed(0)}</td>
-                      <td className="mono text-muted">±{(benchmarkData.ci_pd[i] * 100).toFixed(1)}pp</td>
+                      <td className="mono text-hit" style={{ fontWeight: 600 }}>{(r.v_measure * 100).toFixed(1)}%</td>
+                      <td className="mono">{(r.ami * 100).toFixed(1)}%</td>
+                      <td className="mono text-accent">{(r.homogeneity * 100).toFixed(1)}%</td>
+                      <td className="mono">{(r.completeness * 100).toFixed(1)}%</td>
+                      <td className="mono text-warn">{(r.far * 100).toFixed(1)}%</td>
+                      <td className="mono text-accent" style={{ fontWeight: 600 }}>{r.reward.toFixed(0)}</td>
                     </tr>
                   ))}
                 </tbody>

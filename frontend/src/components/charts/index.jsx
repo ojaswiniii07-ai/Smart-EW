@@ -1,17 +1,17 @@
 import Plot from 'react-plotly.js';
 import { useMemo } from 'react';
-import { generateWaterfallData, NUM_BANDS, NUM_TIME_SLOTS } from '../../data/mockData';
+import { generateWaterfallData, NUM_BANDS, NUM_TIME_SLOTS } from '../../data/radarConstants';
 
 // ── Read current CSS custom properties (works for both light and dark) ─────────
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 function getChartTheme() {
-  const grid  = cssVar('--border')    || '#d4cfc8';
-  const text  = cssVar('--text-faint')|| '#a8a29a';
-  const text2 = cssVar('--text-sub')  || '#78716c';
-  const font  = { family: "'DM Mono', monospace", color: text2, size: 10 };
-  const tick  = { family: "'DM Mono', monospace", color: text,  size: 9 };
+  const grid  = cssVar('--border')    || 'rgba(255,255,255,0.08)';
+  const text  = cssVar('--text-faint')|| '#7a90b0';
+  const text2 = cssVar('--text-sub')  || '#b4bfd4';
+  const font  = { family: "'JetBrains Mono', 'DM Mono', monospace", color: text2, size: 10 };
+  const tick  = { family: "'JetBrains Mono', 'DM Mono', monospace", color: text,  size: 9 };
   return { grid, font, tick, text2 };
 }
 
@@ -23,22 +23,22 @@ function makeLayout(overrides = {}) {
     paper_bgcolor: 'transparent',
     plot_bgcolor:  'transparent',
     font,
-    margin: { t: 8, r: 12, b: 40, l: 52 },
+    margin: { t: 10, r: 16, b: 42, l: 54 },
     xaxis: {
       gridcolor: grid, zerolinecolor: grid,
       linecolor: grid, tickfont: tick,
-      title: { font: { size: 11 } },
+      title: { font: { size: 11, family: "'JetBrains Mono', monospace" } },
     },
     yaxis: {
       gridcolor: grid, zerolinecolor: grid,
       linecolor: grid, tickfont: tick,
-      title: { font: { size: 11 } },
+      title: { font: { size: 11, family: "'JetBrains Mono', monospace" } },
     },
     legend: {
-      bgcolor: 'rgba(0,0,0,0)',
+      bgcolor: 'transparent',
       bordercolor: grid,
       borderwidth: 1,
-      font: { size: 10, family: "'DM Mono', monospace", color: text2 },
+      font: { size: 10, family: "'JetBrains Mono', monospace", color: text2 },
       x: 0.01, y: 0.99,
     },
   };
@@ -58,29 +58,33 @@ export function WaterfallChart({ height = 320, currentBand = 5 }) {
   const layout = makeLayout({
     height,
     xaxis: { title: { text: 'Time Slot →' } },
-    yaxis: { title: { text: '← Band' } },
+    yaxis: { title: { text: '← Frequency Band' } },
   });
 
+  const accent = cssVar('--accent') || '#4f6ef7';
   const traces = [
     {
       type: 'heatmap', z,
       colorscale: [
-        [0.0, 'var(--bg)'],
-        [0.1, '#e8e4de'], [0.25,'#d4cfc8'], [0.45,'#c0bab2'],
-        [0.65,'#a8a29a'], [0.8, '#78716c'], [1.0, '#c25b2a'],
+        [0.0, 'transparent'],
+        [0.15, 'rgba(79, 110, 247, 0.12)'],
+        [0.35, 'rgba(79, 110, 247, 0.32)'],
+        [0.6, 'rgba(79, 110, 247, 0.65)'],
+        [0.85, '#4f6ef7'],
+        [1.0, '#2dd68a'],
       ],
       showscale: true,
       colorbar: {
-        thickness: 10, outlinewidth: 0, len: 0.8,
-        tickfont: { size: 9, color: cssVar('--text-faint') || '#a8a29a', family: "'DM Mono', monospace" },
-        title: { text: 'Power', font: { size: 10, color: cssVar('--text-sub') || '#78716c' } },
+        thickness: 8, outlinewidth: 0, len: 0.82,
+        tickfont: { size: 9, color: cssVar('--text-faint') || '#7a90b0', family: "'JetBrains Mono', monospace" },
+        title: { text: 'Power', font: { size: 10, color: cssVar('--text-sub') || '#b4bfd4' } },
       },
       name: 'Ground Truth',
       hovertemplate: 'Band %{y} · Slot %{x}<br>Power: %{z:.2f}<extra></extra>',
     },
     {
       type: 'scatter', x: [NUM_TIME_SLOTS - 1], y: [currentBand], mode: 'markers',
-      marker: { symbol: 'diamond', size: 12, color: '#c25b2a', line: { color: '#fff', width: 1.5 } },
+      marker: { symbol: 'diamond', size: 12, color: accent, line: { color: '#ffffff', width: 2 } },
       name: 'Observation',
       hovertemplate: 'Current Observation<br>Band %{y}<extra></extra>',
     },
@@ -112,9 +116,14 @@ export function OccupancyHeatmap({ height = 240 }) {
     <Plot
       data={[{
         type: 'heatmap', z, x: hours, y: bands,
-        colorscale: [[0,'transparent'],[0.3,'#e0dbd5'],[0.6,'#a8a29a'],[1,'#2d6a4f']],
+        colorscale: [
+          [0.0, 'transparent'],
+          [0.3, 'rgba(79, 110, 247, 0.16)'],
+          [0.65, 'rgba(79, 110, 247, 0.65)'],
+          [1.0, '#2dd68a'],
+        ],
         showscale: true,
-        colorbar: { thickness: 10, outlinewidth: 0, tickfont: { size: 9, color: cssVar('--text-faint')||'#a8a29a', family: "'DM Mono',monospace" } },
+        colorbar: { thickness: 8, outlinewidth: 0, tickfont: { size: 9, color: cssVar('--text-faint') || '#7a90b0', family: "'JetBrains Mono', monospace" } },
         hovertemplate: '%{y} · %{x}<br>Occupancy: %{z:.2f}<extra></extra>',
       }]}
       layout={layout}
@@ -133,20 +142,24 @@ export function HitMissTimeline({ events = [], height = 180 }) {
     xaxis: { title: { text: 'Simulation Time →' } },
     yaxis: { title: { text: 'Band' } },
   });
+  const hitColor  = cssVar('--hit')  || '#2dd68a';
+  const missColor = cssVar('--miss') || '#f46464';
+  const faColor   = cssVar('--warn') || '#f7b955';
+
   return (
     <Plot
       data={[
         { type: 'scatter', mode: 'markers', name: 'Hit',
           x: hits.map(e => e.t), y: hits.map(e => e.band),
-          marker: { color: '#2d6a4f', size: 7, symbol: 'circle' },
+          marker: { color: hitColor, size: 7, symbol: 'circle' },
           hovertemplate: 't=%{x}  Band %{y}<br>HIT<extra></extra>' },
         { type: 'scatter', mode: 'markers', name: 'Miss',
           x: misses.map(e => e.t), y: misses.map(e => e.band),
-          marker: { color: '#9b1c1c', size: 7, symbol: 'x' },
+          marker: { color: missColor, size: 7, symbol: 'x' },
           hovertemplate: 't=%{x}  Band %{y}<br>MISS<extra></extra>' },
         { type: 'scatter', mode: 'markers', name: 'False Alarm',
           x: fas.map(e => e.t), y: fas.map(e => e.band),
-          marker: { color: '#92400e', size: 7, symbol: 'triangle-up' },
+          marker: { color: faColor, size: 7, symbol: 'triangle-up' },
           hovertemplate: 't=%{x}  Band %{y}<br>FALSE ALARM<extra></extra>' },
       ]}
       layout={layout}
@@ -163,17 +176,22 @@ export function CumulativeRewardChart({ data, height = 220 }) {
     xaxis: { title: { text: 'Step →' } },
     yaxis: { title: { text: 'Cumulative Reward' } },
   });
+  const accent  = cssVar('--accent')      || '#4f6ef7';
+  const pred    = cssVar('--pred')        || '#5ca3f7';
+  const sub     = cssVar('--text-sub')    || '#7a90b0';
+  const faint   = cssVar('--border-dark') || '#445570';
+
   return (
     <Plot
       data={[
         { type: 'scatter', mode: 'lines', name: 'Fixed Sweep', x: t, y: fixed,
-          line: { color: '#c0bab2', dash: 'dot', width: 1.5 } },
+          line: { color: faint, dash: 'dot', width: 1.5 } },
         { type: 'scatter', mode: 'lines', name: 'Random', x: t, y: random,
-          line: { color: '#a8a29a', width: 1.5 } },
+          line: { color: sub, width: 1.5 } },
         { type: 'scatter', mode: 'lines', name: 'Adaptive Stat.', x: t, y: adaptive,
-          line: { color: '#78716c', width: 2 } },
+          line: { color: pred, width: 2 } },
         { type: 'scatter', mode: 'lines', name: 'ML-Adaptive', x: t, y: ml,
-          line: { color: '#c25b2a', width: 2.5 } },
+          line: { color: accent, width: 2.5 } },
       ]}
       layout={layout}
       config={CONFIG} style={{ width: '100%' }} useResizeHandler
@@ -183,8 +201,9 @@ export function CumulativeRewardChart({ data, height = 220 }) {
 
 // ── Latency Distribution ───────────────────────────────────────────────────────
 export function LatencyDistChart({ data, height = 220 }) {
+  const accent = cssVar('--accent') || '#4f6ef7';
   const layout = makeLayout({
-    height, bargap: 0.05,
+    height, bargap: 0.08,
     xaxis: { title: { text: 'Latency (s)' } },
     yaxis: { title: { text: 'Count' } },
   });
@@ -192,7 +211,7 @@ export function LatencyDistChart({ data, height = 220 }) {
     <Plot
       data={[{
         type: 'histogram', x: data, nbinsx: 30,
-        marker: { color: 'rgba(194,91,42,0.45)', line: { color: '#c25b2a', width: 0.8 } },
+        marker: { color: 'rgba(79, 110, 247, 0.35)', line: { color: accent, width: 1 } },
         name: 'Latency',
       }]}
       layout={layout}
@@ -202,49 +221,82 @@ export function LatencyDistChart({ data, height = 220 }) {
 }
 
 // ── Benchmark Bar Chart ────────────────────────────────────────────────────────
-export function BenchmarkBar({ metric, values, labels, height = 280, yLabel = '' }) {
-  const accent = cssVar('--accent') || '#c25b2a';
-  const colors = [
-    cssVar('--border-dark') || '#a8a29a',
-    cssVar('--border-mid')  || '#c0bab2',
-    cssVar('--text-faint')  || '#a8a29a',
-    accent,
-    cssVar('--hit')         || '#2d6a4f',
-  ];
+export function BenchmarkBar({ metric = 'V-Measure', values = [], labels = [], height = 320, yLabel = '' }) {
+  const accent = cssVar('--accent') || '#4f6ef7';
+  const hit    = cssVar('--hit')    || '#2dd68a';
+  const pred   = cssVar('--pred')   || '#5ca3f7';
+  const gt     = cssVar('--gt')     || '#b39dfa';
+  const border = cssVar('--border') || 'rgba(255,255,255,0.08)';
+
+  const safeLabels = Array.isArray(labels) ? labels : [];
+  const safeValues = (Array.isArray(values) ? values : []).map(v => (typeof v === 'number' && !isNaN(v) ? v : 0));
+
+  const isRatio = safeValues.length > 0 && safeValues.every(v => v <= 1.05 && v >= 0);
+
+  const colors = safeLabels.map((_, i) => {
+    if (i === 0) return hit;
+    if (i === 1) return accent;
+    if (i === 2) return pred;
+    if (i === 3) return gt;
+    if (i >= safeLabels.length - 2) return cssVar('--border-dark') || '#445570';
+    return cssVar('--border-mid') || '#5a6a82';
+  });
+
+  // When metric is a ratio (0–1), scale bars to 0–100 so percentage values match visual heights
+  const yValues = isRatio ? safeValues.map(v => +(v * 100).toFixed(2)) : safeValues;
+  const textDisplay = safeValues.map(v => (isRatio ? `${(v * 100).toFixed(1)}%` : v.toFixed(1)));
+  
+  const maxY = Math.max(...yValues, 1);
+  // Ensure generous top headroom (18–25%) so outside value labels never touch the top boundary or title
+  const yRange = isRatio ? [0, Math.min(125, Math.max(105, maxY * 1.18))] : [0, maxY * 1.2];
+
   const layout = makeLayout({
     height,
-    margin: { t: 48, r: 16, b: 80, l: 60 },
+    margin: { t: 40, r: 24, b: 80, l: 64 },
     xaxis: {
       title: { text: '' },
-      tickfont: { family: "'DM Mono', monospace", size: 11, color: cssVar('--text-sub') || '#78716c' },
+      tickangle: -25,
+      automargin: true,
+      tickfont: { family: "'JetBrains Mono', monospace", size: 10, color: cssVar('--text-sub') || '#b4bfd4' },
     },
-    yaxis: { title: { text: yLabel || metric } },
-    bargap: 0.32,
+    yaxis: {
+      title: { text: yLabel || (isRatio ? `${metric} (%)` : metric), font: { size: 11, family: "'JetBrains Mono', monospace" } },
+      ticksuffix: isRatio ? '%' : '',
+      range: yRange,
+      automargin: true,
+    },
+    bargap: 0.28,
   });
+
   return (
     <Plot
       data={[{
         type: 'bar',
-        x: labels,
-        y: values,
+        x: safeLabels,
+        y: yValues,
         marker: {
-          color: colors.slice(0, labels.length),
-          line: { color: cssVar('--border') || '#d4cfc8', width: 1 },
+          color: colors,
+          line: { color: border, width: 1 },
         },
-        text: values.map(v => v.toFixed(3)),
+        text: textDisplay,
         textposition: 'outside',
-        textfont: { size: 10, color: cssVar('--text-sub') || '#78716c', family: "'DM Mono', monospace" },
+        textfont: { size: 10.5, color: cssVar('--text-base') || '#e8edf8', family: "'JetBrains Mono', monospace" },
         cliponaxis: false,
-        hovertemplate: '%{x}<br>' + metric + ': %{y:.3f}<extra></extra>',
+        hovertemplate: '%{x}<br>' + (yLabel || metric) + ': %{text}<extra></extra>',
       }]}
       layout={layout}
-      config={CONFIG} style={{ width: '100%' }} useResizeHandler
+      config={CONFIG}
+      style={{ width: '100%', height: `${height}px` }}
+      useResizeHandler
     />
   );
 }
 
 // ── ROC Curve ──────────────────────────────────────────────────────────────────
 export function ROCCurve({ data, height = 240 }) {
+  const accent = cssVar('--accent') || '#4f6ef7';
+  const border = cssVar('--border-dark') || '#445570';
+
   const layout = makeLayout({
     height,
     xaxis: { title: { text: 'False Positive Rate' }, range: [0, 1] },
@@ -255,11 +307,11 @@ export function ROCCurve({ data, height = 240 }) {
       data={[
         { type: 'scatter', mode: 'lines', name: `AUC = ${data.auc}`,
           x: data.fpr, y: data.tpr,
-          line: { color: '#c25b2a', width: 2 },
-          fill: 'tozeroy', fillcolor: 'rgba(194,91,42,0.07)' },
+          line: { color: accent, width: 2.2 },
+          fill: 'tozeroy', fillcolor: 'rgba(79, 110, 247, 0.08)' },
         { type: 'scatter', mode: 'lines', name: 'Random Chance',
           x: [0, 1], y: [0, 1],
-          line: { color: '#c0bab2', dash: 'dash', width: 1 } },
+          line: { color: border, dash: 'dash', width: 1 } },
       ]}
       layout={layout}
       config={CONFIG} style={{ width: '100%' }} useResizeHandler
@@ -273,7 +325,7 @@ export function FeatureImportanceChart({ data, height = 240 }) {
   const { tick } = getChartTheme();
   const layout = makeLayout({
     height,
-    margin: { t: 8, r: 12, b: 40, l: 120 },
+    margin: { t: 8, r: 16, b: 40, l: 120 },
     xaxis: { title: { text: 'Importance' } },
     yaxis: { automargin: true, tickfont: { ...tick, size: 9 } },
   });
@@ -284,8 +336,8 @@ export function FeatureImportanceChart({ data, height = 240 }) {
         x: sorted.map(d => d.importance),
         y: sorted.map(d => d.feature),
         marker: { color: sorted.map((_, i, arr) => {
-          const t = i / (arr.length - 1);
-          return `rgba(194,91,42,${0.3 + t * 0.65})`;
+          const t = i / Math.max(1, arr.length - 1);
+          return `rgba(79, 110, 247, ${0.35 + t * 0.65})`;
         })},
         hovertemplate: '%{y}<br>Importance: %{x:.3f}<extra></extra>',
       }]}
@@ -297,6 +349,9 @@ export function FeatureImportanceChart({ data, height = 240 }) {
 
 // ── Calibration Curve ──────────────────────────────────────────────────────────
 export function CalibrationCurve({ data, height = 240 }) {
+  const accent = cssVar('--accent') || '#4f6ef7';
+  const border = cssVar('--border-dark') || '#445570';
+
   const layout = makeLayout({
     height,
     xaxis: { title: { text: 'Mean Predicted Probability' }, range: [0, 1] },
@@ -307,11 +362,11 @@ export function CalibrationCurve({ data, height = 240 }) {
       data={[
         { type: 'scatter', mode: 'lines+markers', name: 'Model',
           x: data.predicted, y: data.actual,
-          line: { color: '#c25b2a', width: 2 },
-          marker: { color: '#c25b2a', size: 6 } },
+          line: { color: accent, width: 2 },
+          marker: { color: accent, size: 6 } },
         { type: 'scatter', mode: 'lines', name: 'Perfect Calibration',
           x: [0, 1], y: [0, 1],
-          line: { color: '#c0bab2', dash: 'dash', width: 1 } },
+          line: { color: border, dash: 'dash', width: 1 } },
       ]}
       layout={layout}
       config={CONFIG} style={{ width: '100%' }} useResizeHandler
@@ -331,7 +386,7 @@ export function ConfusionMatrix({ height = 260, matrix, labels }) {
   const text = z.map(row => row.map(v => typeof v === 'number' ? (v < 1 ? v.toFixed(2) : String(Math.round(v))) : String(v)));
   const layout = makeLayout({
     height,
-    margin: { t: 8, r: 12, b: 60, l: 110 },
+    margin: { t: 8, r: 16, b: 60, l: 110 },
     xaxis: { tickangle: -25 },
     yaxis: { autorange: 'reversed' }
   });
@@ -341,11 +396,15 @@ export function ConfusionMatrix({ height = 260, matrix, labels }) {
         type: 'heatmap', z,
         x: xLabels,
         y: yLabels,
-        colorscale: [[0, cssVar('--bg') || '#f5f3f0'], [0.5, '#e8e4de'], [1, '#2d6a4f']],
+        colorscale: [
+          [0.0, 'transparent'],
+          [0.5, 'rgba(79, 110, 247, 0.2)'],
+          [1.0, '#2dd68a'],
+        ],
         showscale: true,
         colorbar: { thickness: 8, outlinewidth: 0 },
         text, texttemplate: '%{text}',
-        textfont: { size: z.length > 4 ? 10 : 16, color: cssVar('--text-base') || '#18181b' },
+        textfont: { size: z.length > 4 ? 10 : 15, color: cssVar('--text-base') || '#e8edf8', family: "'JetBrains Mono', monospace" },
         hovertemplate: '%{y}<br>%{x}<br>Value: %{z:.3f}<extra></extra>',
       }]}
       layout={layout}
@@ -358,18 +417,22 @@ export function ConfusionMatrix({ height = 260, matrix, labels }) {
 export function SchedulerRadar({ height = 300 }) {
   const { grid, font, tick } = getChartTheme();
   const cats = ['Pd', 'Low FAR', 'Obs Rate', 'Low Latency', 'Coverage', 'Reward'];
+  const accent = cssVar('--accent') || '#4f6ef7';
+  const pred   = cssVar('--pred')   || '#5ca3f7';
+  const border = cssVar('--border-dark') || '#445570';
+
   return (
     <Plot
       data={[
         { type: 'scatterpolar', fill: 'toself', name: 'Fixed Sweep',
           r: [0.41, 0.91, 0.31, 0.18, 0.71, 0.30], theta: cats,
-          line: { color: '#c0bab2' }, fillcolor: 'rgba(192,186,178,0.15)' },
+          line: { color: border }, fillcolor: 'rgba(150,150,150,0.1)' },
         { type: 'scatterpolar', fill: 'toself', name: 'Adaptive',
           r: [0.67, 0.94, 0.54, 0.47, 0.87, 0.70], theta: cats,
-          line: { color: '#78716c' }, fillcolor: 'rgba(120,113,108,0.15)' },
+          line: { color: pred }, fillcolor: 'rgba(92,163,247,0.12)' },
         { type: 'scatterpolar', fill: 'toself', name: 'ML-Adaptive',
           r: [0.84, 0.96, 0.71, 0.73, 0.93, 1.00], theta: cats,
-          line: { color: '#c25b2a', width: 2 }, fillcolor: 'rgba(194,91,42,0.12)' },
+          line: { color: accent, width: 2.2 }, fillcolor: 'rgba(79,110,247,0.18)' },
       ]}
       layout={{
         paper_bgcolor: 'transparent',
@@ -381,11 +444,11 @@ export function SchedulerRadar({ height = 300 }) {
           angularaxis: { gridcolor: grid, tickfont: { ...tick, size: 10 } },
         },
         legend: {
-          bgcolor: 'rgba(0,0,0,0)', bordercolor: grid, borderwidth: 1,
+          bgcolor: 'transparent', bordercolor: grid, borderwidth: 1,
           font: { ...font, size: 10 }, x: 0.01, y: 0.99,
         },
         height,
-        margin: { t: 20, r: 20, b: 20, l: 20 },
+        margin: { t: 24, r: 24, b: 24, l: 24 },
       }}
       config={CONFIG} style={{ width: '100%' }} useResizeHandler
     />

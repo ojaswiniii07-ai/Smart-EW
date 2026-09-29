@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Brain, Play, ExternalLink, Cpu, Database, CheckCircle2, AlertCircle } from 'lucide-react';
 import { FeatureImportanceChart, ROCCurve, CalibrationCurve, ConfusionMatrix } from '../components/charts';
-import { mockModels, featureImportance, generateROCData, generateCalibrationData } from '../data/mockData';
+import { realModels, featureImportance, generateROCData, generateCalibrationData } from '../data/radarConstants';
 import { modelsApi, deinterleaveApi } from '../services/api';
 
 const STATUS_CLASSES = { active: 'badge-success', experimental: 'badge-warn', deprecated: 'badge-error' };
@@ -24,7 +24,7 @@ const STATIC_LEADERBOARD = [
 ];
 
 export default function ModelLab() {
-  const [modelsList, setModelsList] = useState(mockModels);
+  const [modelsList, setModelsList] = useState(realModels);
   const [selectedId, setSelectedId] = useState(null);  // null = auto-select first live model
   const [tab, setTab] = useState('overview');
   const [leaderboard, setLeaderboard] = useState(STATIC_LEADERBOARD);
@@ -66,7 +66,7 @@ export default function ModelLab() {
     });
   }, []);
 
-  const model = modelsList.find(m => m.id === selectedId) ?? modelsList[0] ?? mockModels[2];
+  const model = modelsList.find(m => m.id === selectedId) ?? modelsList[0] ?? realModels[0];
   const approachStyle = APPROACH_LABELS[model.approach] ?? APPROACH_LABELS.traditional;
 
   // Real or synthetic ROC data
@@ -163,7 +163,8 @@ export default function ModelLab() {
                     padding: '10px 12px', marginBottom: 4, cursor: 'pointer',
                     background: selectedId === m.id ? 'var(--accent-bg)' : 'var(--bg-well)',
                     border: `1px solid ${selectedId === m.id ? 'var(--accent-border)' : 'transparent'}`,
-                    transition: 'background var(--dur) var(--ease)',
+                    borderRadius: 'var(--r-sm)',
+                    transition: 'background var(--dur) var(--ease), border-color var(--dur) var(--ease)',
                   }}
                   aria-pressed={selectedId === m.id}
                 >
@@ -248,7 +249,7 @@ export default function ModelLab() {
             </div>
 
             {/* Metrics Grid */}
-            <div className="grid-4 mb-4" style={{ gap: 1, background: 'var(--border)', border: '1px solid var(--border)' }}>
+            <div className="grid-4 mb-4" style={{ gap: 8 }}>
               {[
                 { key: 'v_measure',   label: 'V-Measure',   highlight: true },
                 { key: 'ami',         label: 'AMI',          highlight: false },
@@ -257,12 +258,12 @@ export default function ModelLab() {
               ].map(({ key, label, highlight }) => {
                 const val = model.metrics?.[key] ?? 0;
                 return (
-                  <div key={key} style={{ background: 'var(--bg-panel)', padding: '12px 14px' }}>
+                  <div key={key} style={{ background: 'var(--bg-well)', padding: '12px 14px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)' }}>
                     <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
                       {label}
-                      {highlight && <span style={{ color: '#f59e0b', marginLeft: 4 }}>★</span>}
+                      {highlight && <span style={{ color: 'var(--accent)', marginLeft: 4 }}>★</span>}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 400, color: highlight ? 'var(--accent)' : 'var(--text-base)' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 500, color: highlight ? 'var(--hit)' : 'var(--text-base)' }}>
                       {(val * 100).toFixed(1)}%
                     </div>
                   </div>
@@ -350,7 +351,7 @@ export default function ModelLab() {
                       setTbMode(e.target.value);
                       setTbSplit(e.target.value === 'scan' ? 'test_scan' : e.target.value === 'stare' ? 'test_stare' : 'test');
                     }}
-                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'inherit' }}
+                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'inherit' }}
                   >
                     <option value="scan">Scan (Rotating Radar)</option>
                     <option value="stare">Stare (Tracking Radar)</option>
@@ -364,7 +365,7 @@ export default function ModelLab() {
                     className="select-input"
                     value={tbModelType}
                     onChange={e => setTbModelType(e.target.value)}
-                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'inherit' }}
+                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'inherit' }}
                   >
                     <option value="random_forest">Random Forest (Multi-Mode)</option>
                     <option value="transformer">Transformer (Apple Silicon MPS)</option>
@@ -377,7 +378,7 @@ export default function ModelLab() {
                     className="select-input"
                     value={tbSeqLen}
                     onChange={e => setTbSeqLen(Number(e.target.value))}
-                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'inherit' }}
+                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'inherit' }}
                   >
                     <option value={64}>64 Pulses</option>
                     <option value={128}>128 Pulses</option>
@@ -393,7 +394,7 @@ export default function ModelLab() {
                     max={19}
                     value={tbFileIdx}
                     onChange={e => setTbFileIdx(Number(e.target.value))}
-                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', color: 'inherit' }}
+                    style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-inset)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'inherit' }}
                   />
                 </div>
               </div>
@@ -410,8 +411,8 @@ export default function ModelLab() {
               {tbError && (
                 <div style={{
                   display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12,
-                  padding: '10px 14px', background: 'rgba(239,68,68,0.08)',
-                  border: '1px solid rgba(239,68,68,0.25)', fontSize: 12, color: '#f87171',
+                  padding: '10px 14px', background: 'var(--miss-bg)',
+                  border: '1px solid rgba(244,100,100,0.25)', borderRadius: 'var(--r-sm)', fontSize: 12, color: 'var(--miss)',
                 }}>
                   <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
                   <div>{tbError}</div>

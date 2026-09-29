@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Radio, Waves, BrainCircuit, FlaskConical,
   FileText, BarChart3, Cpu, Database, Settings,
@@ -28,6 +28,19 @@ const NAV = [
 export default function Sidebar() {
   return (
     <nav className="app-sidebar" aria-label="Main navigation">
+      <Link to="/" className="logo" aria-label="SMART-EW home">
+        <div className="logo-mark" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <span>
+          <span className="logo-wordmark">SMART<span className="logo-sub">-EW</span></span>
+          <span className="logo-tagline">Deinterleaving</span>
+        </span>
+      </Link>
+
       {NAV.map(section => (
         <div key={section.label} className="nav-group">
           <div className="nav-group-label">{section.label}</div>
@@ -46,19 +59,17 @@ export default function Sidebar() {
         </div>
       ))}
 
-      {/* System status footer */}
-      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="dot dot-active" aria-hidden="true" />
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>Simulation Ready</span>
+      {/* Live system status */}
+      <div className="nav-status">
+        <div className="nav-status-row">
+          <span><span className="dot dot-active" aria-hidden="true" /> Simulation</span>
+          <span className="nav-status-value">Ready</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="dot dot-running" aria-hidden="true" />
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>ML Service Active</span>
+        <div className="nav-status-row">
+          <span><span className="dot dot-running" aria-hidden="true" /> ML service</span>
+          <span className="nav-status-value">Active</span>
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 10, fontFamily: 'var(--font-mono)' }}>
-          SMART-EW v1.0.0 · Research Platform
-        </div>
+        <div className="nav-status-meta">SMART-EW v1.0.0 · Research</div>
       </div>
     </nav>
   );

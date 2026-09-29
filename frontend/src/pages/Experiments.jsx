@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Play, Copy, Trash2, Download, RotateCcw } from 'lucide-react';
-import { mockScenarios, mockRuns, schedulerTypes } from '../data/mockData';
+import { realScenarios, realRuns, schedulerTypes } from '../data/radarConstants';
 import { useExpStore } from '../store';
 
 const STATUS_BADGE = {
@@ -14,7 +14,7 @@ const STATUS_BADGE = {
 export default function Experiments() {
   const store = useExpStore();
   const [creating, setCreating] = useState(false);
-  const [runs, setRuns] = useState(mockRuns);
+  const [runs, setRuns] = useState(realRuns);
   const [notification, setNotification] = useState(null);
 
   const notify = msg => {
@@ -32,7 +32,7 @@ export default function Experiments() {
       status:       'running',
       started_at:   new Date().toISOString(),
       ended_at:     null,
-      metrics: { pd: null, far: null, obs_rate: null, avg_latency: null, coverage: null, reward: null },
+      metrics: { v_measure: null, ami: null, homogeneity: null, completeness: null, pairwise_f1: null, reward: null },
       version: '1.0.0',
     };
     setRuns(r => [newRun, ...r]);
@@ -63,7 +63,7 @@ export default function Experiments() {
             <div className="form-group">
               <label htmlFor="exp-scenario">Scenario</label>
               <select id="exp-scenario" value={store.selectedScenario} onChange={e => store.setField('selectedScenario', e.target.value)}>
-                {mockScenarios.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {realScenarios.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div className="form-group">
@@ -76,10 +76,11 @@ export default function Experiments() {
               <label htmlFor="exp-model">ML Model</label>
               <select id="exp-model" value={store.selectedModel} onChange={e => store.setField('selectedModel', e.target.value)}>
                 <option value="">None (Baseline)</option>
-                <option value="mdl-001">LogisticBaseline v1.0</option>
-                <option value="mdl-002">RandomForestV2</option>
-                <option value="mdl-003">GradientBoostEW v1.0</option>
-                <option value="mdl-004">NeuralEWNet v0.9 (Exp.)</option>
+                <option value="mdl-trad-02">DBSCAN (CF + AoA)</option>
+                <option value="mdl-trad-01">PRI Histogram + KMeans</option>
+                <option value="mdl-rf-stare">Random Forest – Stare</option>
+                <option value="mdl-trans-stare">Transformer – Stare</option>
+                <option value="mdl-trans-scan">Transformer – Scan</option>
               </select>
             </div>
             <div className="form-group">
@@ -114,7 +115,7 @@ export default function Experiments() {
             </div>
           </div>
 
-          <div style={{ background: 'var(--bg-inset)', padding: 12, marginBottom: 12 }}>
+          <div style={{ background: 'var(--bg-inset)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: 12, marginBottom: 14 }}>
             <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Configuration Preview</div>
             <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-sub)', overflowX: 'auto' }}>
               {JSON.stringify({ scenario: store.selectedScenario, scheduler: store.selectedScheduler, seed: store.seed, bands: store.bands, duration: store.duration, repetitions: store.repetitions }, null, 2)}
@@ -140,7 +141,7 @@ export default function Experiments() {
             <thead>
               <tr>
                 <th>Run ID</th><th>Scenario</th><th>Scheduler</th><th>Seed</th>
-                <th>Status</th><th>Pd</th><th>FAR</th><th>Latency</th><th>Reward</th><th>Actions</th>
+                <th>Status</th><th>V-Measure</th><th>AMI</th><th>Homogeneity</th><th>Reward</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -148,7 +149,7 @@ export default function Experiments() {
                 <tr key={r.id}>
                   <td className="mono text-accent">{r.id}</td>
                   <td style={{ fontFamily: 'inherit', color: 'var(--text-sub)' }}>
-                    {mockScenarios.find(s => s.id === r.scenario_id)?.name ?? r.scenario_id}
+                    {realScenarios.find(s => s.id === r.scenario_id)?.name ?? r.scenario_id}
                   </td>
                   <td style={{ fontFamily: 'inherit' }}>
                     {schedulerTypes.find(s => s.id === r.scheduler_id)?.name ?? r.scheduler_id}
@@ -157,9 +158,9 @@ export default function Experiments() {
                   <td>
                     <span className={`badge ${STATUS_BADGE[r.status] ?? 'badge-neutral'}`}>{r.status}</span>
                   </td>
-                  <td className="mono text-hit">{r.metrics.pd != null ? (r.metrics.pd * 100).toFixed(1) + '%' : '—'}</td>
-                  <td className="mono text-warn">{r.metrics.far != null ? (r.metrics.far * 100).toFixed(1) + '%' : '—'}</td>
-                  <td className="mono">{r.metrics.avg_latency != null ? r.metrics.avg_latency.toFixed(1) + ' s' : '—'}</td>
+                  <td className="mono text-hit">{r.metrics.v_measure != null ? (r.metrics.v_measure * 100).toFixed(1) + '%' : '—'}</td>
+                  <td className="mono text-warn">{r.metrics.ami != null ? (r.metrics.ami * 100).toFixed(1) + '%' : '—'}</td>
+                  <td className="mono">{r.metrics.homogeneity != null ? (r.metrics.homogeneity * 100).toFixed(1) + '%' : '—'}</td>
                   <td className="mono text-accent">{r.metrics.reward != null ? r.metrics.reward.toFixed(0) : '—'}</td>
                   <td>
                     <div className="flex gap-1">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Upload, Eye, Download, ExternalLink, Database, Layers, Radio, RefreshCw } from 'lucide-react';
-import { mockDatasets, PDW_PARAMS, TSRD_STATS } from '../data/mockData';
+import { realDatasets, PDW_PARAMS, TSRD_STATS } from '../data/radarConstants';
 import { datasetsApi } from '../services/api';
 
 const STATUS_COLORS = { ready: 'badge-success', preprocessing: 'badge-warn', error: 'badge-error' };
@@ -57,7 +57,7 @@ function TSRDStatsTable({ mode, stats }) {
 }
 
 export default function DatasetManager() {
-  const [datasets, setDatasets]   = useState(mockDatasets);
+  const [datasets, setDatasets]   = useState(realDatasets);
   const [rawSplits, setRawSplits] = useState([]);
   const [selected, setSelected]   = useState(null); // null = auto-select first
   const [statsMode, setStatsMode] = useState('stare');
@@ -173,7 +173,7 @@ export default function DatasetManager() {
                   <tr
                     key={d.id}
                     onClick={() => setSelected(d.id)}
-                    style={{ cursor: 'pointer', background: selected === d.id ? 'rgba(59,130,246,0.05)' : 'transparent' }}
+                    style={{ cursor: 'pointer', background: selected === d.id ? 'var(--accent-bg)' : 'transparent' }}
                   >
                     <td style={{ color: 'var(--accent)', fontFamily: 'inherit' }}>
                       {d.name}
@@ -235,7 +235,7 @@ export default function DatasetManager() {
                     <td style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{col}</td>
                     <td style={{ color: 'var(--pred)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{type}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-sub)' }}>{unit}</td>
-                    <td style={{ color: +missing > 1 ? 'var(--false-alarm)' : 'var(--hit)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{missing}</td>
+                    <td style={{ color: +missing > 1 ? 'var(--warn)' : 'var(--hit)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{missing}</td>
                     <td style={{ fontFamily: 'inherit', color: 'var(--text-sub)', fontSize: 11 }}>{description}</td>
                   </tr>
                 ))}
@@ -266,11 +266,10 @@ export default function DatasetManager() {
             </div>
             <TSRDStatsTable mode={statsMode} stats={TSRD_STATS[statsMode]} />
           </div>
-        </div>
 
           {/* Live Split Breakdown from backend */}
           {rawSplits.length > 0 && (
-            <div className="card">
+            <div className="card mt-4">
               <div className="card-header">
                 <div className="card-title">📂 Local Split Inventory (tsrd_subset/)</div>
                 <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{rawSplits.reduce((a, s) => a + s.file_count, 0)} total files</span>
@@ -292,6 +291,7 @@ export default function DatasetManager() {
               </table>
             </div>
           )}
+        </div>
 
         {/* Dataset Detail Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

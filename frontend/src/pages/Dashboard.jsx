@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Play, Plus, BarChart3, Radio, ArrowRight, Target, AlertTriangle, Crosshair, Clock, Award, Layers, ChevronRight, ExternalLink, Cpu, Database } from 'lucide-react';
 import { CumulativeRewardChart, HitMissTimeline } from '../components/charts';
-import { generateHitMissTimeline, generateRewardCurves, kpiSummary, benchmarkData } from '../data/mockData';
+import { generateHitMissTimeline, generateRewardCurves, kpiSummary, benchmarkData } from '../data/radarConstants';
 import { useMemo, useState, useEffect } from 'react';
 import { kpiApi, modelsApi, systemApi } from '../services/api';
 
@@ -143,16 +143,16 @@ function LiveModelCard({ models, systemStatus }) {
           <span style={{ marginLeft: 8, color: 'var(--text-faint)' }}>· {systemStatus.hardware.device.toUpperCase()}</span>
         )}
       </div>
-      <div style={{ background: 'var(--bg-inset)', padding: 14, marginBottom: 12 }}>
+      <div style={{ background: 'var(--bg-well)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: 14, marginBottom: 12 }}>
         <div className="flex items-center justify-between mb-2">
           <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Best Mode: {best.mode?.toUpperCase() ?? 'Multi-Mode'}</span>
           <span className="badge badge-info">V-Measure: {(vm * 100).toFixed(1)}%</span>
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 400, color: 'var(--accent)', lineHeight: 1 }}>
-          Pairwise F1 = {(pf1 * 100).toFixed(1)}%
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 600, color: 'var(--text-base)', lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+          {(pf1 * 100).toFixed(1)}% <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-faint)' }}>Pairwise F1</span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
-          Trained on real TSRD HDF5 data · {best.epochs ?? 30} epochs · Apple Silicon MPS
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+          Real TSRD HDF5 data · {best.epochs ?? 30} epochs · Apple Silicon MPS
         </div>
       </div>
       <div className="panel-accent" style={{ fontSize: 12, color: 'var(--text-mid)' }}>
@@ -235,47 +235,39 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* System Status Row */}
+      {/* System Status Stripe */}
       {systemStatus && (
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px',
-            background: systemStatus.api.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${systemStatus.api.ok ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            fontSize: 12,
-          }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: systemStatus.api.ok ? '#10b981' : '#ef4444', flexShrink: 0 }} />
-            Backend API {systemStatus.api.ok ? `Online · ${systemStatus.api.latency_ms}ms` : 'Offline'}
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px',
-            background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', fontSize: 12,
-          }}>
-            <Cpu size={12} style={{ color: 'var(--accent)' }} />
-            {systemStatus.hardware?.device?.toUpperCase() ?? 'MPS'} · {systemStatus.hardware?.platform ?? 'Apple Silicon'}
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px',
-            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', fontSize: 12,
-          }}>
-            <Database size={12} style={{ color: 'var(--hit)' }} />
-            {systemStatus.db?.records ?? 0} HDF5 files loaded
-          </div>
+        <div className="status-stripe">
+          <span className="dot dot-active" aria-hidden="true" />
+          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>Backend</span>
+          <span className="status-stripe-val">
+            {systemStatus.api.ok ? `Online · ${systemStatus.api.latency_ms}ms` : 'Offline'}
+          </span>
+          <span className="status-stripe-divider" aria-hidden="true" />
+          <Cpu size={12} style={{ color: 'var(--accent)' }} aria-hidden="true" />
+          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+            {systemStatus.hardware?.device?.toUpperCase() ?? 'MPS'}
+          </span>
+          <span className="status-stripe-divider" aria-hidden="true" />
+          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>HDF5 files</span>
+          <span className="status-stripe-val">{systemStatus.db?.records ?? 0}</span>
         </div>
       )}
 
       {/* TSRD Info Banner */}
-      <div className="card section" style={{ borderColor: 'rgba(59,130,246,0.25)', background: 'rgba(59,130,246,0.04)', marginBottom: 16 }}>
+      <div className="card section" style={{ marginBottom: 16 }}>
         <div className="flex items-center justify-between">
-          <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--text-base)' }}>Turing Synthetic Radar Dataset (TSRD)</strong> — 
-            The first publicly available, comprehensively simulated pulse train dataset for radar deinterleaving research.
-            Over <strong style={{ color: 'var(--accent)' }}>4 billion pulses</strong> across{' '}
-            <strong style={{ color: 'var(--accent)' }}>6,000 pulse trains</strong>, up to{' '}
-            <strong style={{ color: 'var(--accent)' }}>90 simultaneous emitters</strong> per train.
-            Each pulse described by 5 PDW parameters: ToA · CF · PW · AoA · Amplitude.
+          <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.65 }}>
+            <strong style={{ color: 'var(--text-base)', fontSize: 13 }}>Turing Synthetic Radar Dataset (TSRD)</strong>
+            {' '}— First publicly available, comprehensively simulated pulse train dataset for radar deinterleaving.
+            {' '}<span style={{ color: 'var(--text-base)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>4B+ pulses</span>
+            {' '}across{' '}
+            <span style={{ color: 'var(--text-base)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>6,000 trains</span>
+            {' '}· up to{' '}
+            <span style={{ color: 'var(--text-base)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>90 emitters</span>
+            {' '}per train · PDW = ToA · CF · PW · AoA · Amplitude
           </div>
-          <div className="flex gap-2" style={{ flexShrink: 0, marginLeft: 16 }}>
+          <div className="flex gap-2" style={{ flexShrink: 0, marginLeft: 20 }}>
             <a
               href="https://huggingface.co/datasets/alan-turing-institute/turing-synthetic-radar-dataset"
               target="_blank" rel="noopener noreferrer"
@@ -284,7 +276,7 @@ export default function Dashboard() {
               <ExternalLink size={11} /> HuggingFace
             </a>
             <Link to="/datasets" className="btn btn-ghost btn-sm">
-              <Layers size={11} /> Dataset Manager
+              <Layers size={11} /> Datasets
             </Link>
           </div>
         </div>

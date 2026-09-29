@@ -3,7 +3,7 @@ import { Play, Pause, SkipForward, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { WaterfallChart, HitMissTimeline } from '../components/charts';
 import { useSimStore } from '../store';
 import { MockWebSocket } from '../services/mockWebSocket';
-import { generateCandidates } from '../data/mockData';
+import { generateCandidates } from '../data/radarConstants';
 
 const RESULT_COLORS = {
   hit:         'var(--hit)',
@@ -207,6 +207,8 @@ export default function LiveSimulation() {
                   marginBottom: 3,
                   background: c.selected ? 'var(--accent-bg)' : 'var(--bg-inset)',
                   border: `1px solid ${c.selected ? 'var(--accent-border)' : 'transparent'}`,
+                  borderRadius: 'var(--r-sm)',
+                  transition: 'background var(--dur) var(--ease), border-color var(--dur) var(--ease)',
                 }}
               >
                 <div className="flex items-center justify-between mb-1">
